@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",                                                                        
+    "jsx": "preserve", 
+    "module": "ESNext",                                                
+    "moduleResolution": "node",
+    "rootDir": "./src",                     
+    "baseUrl": ".",                                  
+    "paths": {
+      "common/*": [
+        "src/common/*"
+      ],
+      "@/*": [
+        "src/*"
+      ]
+    },      
+    "strict": true,                                 
+    "sourceMap": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "importHelpers": true,
+    "noUnusedLocals": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedParameters": true,
+    "noEmit": true,
+    "skipLibCheck": true                        
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+  ]
+}
