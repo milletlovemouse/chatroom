@@ -1,37 +1,39 @@
-const { merge } = require('webpack-merge')
-const base = require('./webpack.base.js')
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
-const TerserPlugin = require('terser-webpack-plugin')
-const Dotenv = require('dotenv-webpack');
+import path, { dirname } from 'path'
+import { fileURLToPath } from "url"
+import { merge } from 'webpack-merge'
+import config  from './webpack.config.js'
+import MiniCssExtractPlugin  from 'mini-css-extract-plugin'
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin'
+import TerserPlugin from 'terser-webpack-plugin'
+import Dotenv from 'dotenv-webpack'
 
-module.exports = merge(base, {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const prodConfig = merge(config, {
   mode: 'production',
   plugins: [
     new MiniCssExtractPlugin({
       filename: 'assets/css/[hash:8].css', // 将css单独提测出来放在assets/css 下
     }),
     new Dotenv({
-      path: '../.env.production', // 指定环境变量文件路径
+      path: path.resolve(__dirname, '../.env.production'), // 指定环境变量文件路径
     })
   ],
   module: {
     rules: [
       {
-        test: /\.(css|less)$/,
+        test: /\.css$/,
+        use: getStylePlugin({
+          importLoaders: 1
+        })
+      },
+      {
+        test: /\.less$/,
         use: [
-          MiniCssExtractPlugin.loader, // 使用 MiniCssExtractPlugin.loader 代替 style-loader
-          'css-loader',
-          {
-            loader: 'postcss-loader',
-            options: {
-              // 它可以帮助我们将一些现代的 CSS 特性，转成大多数浏览器认识的 CSS，并且会根据目标浏览器或运行时环境添加所需的 polyfill；
-              // 也包括会自动帮助我们添加 autoprefixer
-              postcssOptions: {
-                plugins: [['postcss-preset-env', {}]],
-              },
-            },
-          },
+          ...getStylePlugin({
+            importLoaders: 2
+          }),
           'less-loader',
         ],
         // 排除 node_modules 目录
@@ -53,3 +55,28 @@ module.exports = merge(base, {
     ],
   },
 })
+
+function getStylePlugin(cssLoaderOptions) {
+  return [
+    MiniCssExtractPlugin.loader,
+    {
+      loader: "css-loader",
+      options: {
+        modules: true,
+        ...cssLoaderOptions
+      },
+    },
+    {
+      loader: 'postcss-loader',
+      options: {
+        // 它可以帮助我们将一些现代的 CSS 特性，转成大多数浏览器认识的 CSS，并且会根据目标浏览器或运行时环境添加所需的 polyfill；
+        // 也包括会自动帮助我们添加 autoprefixer
+        postcssOptions: {
+          plugins: [['postcss-preset-env', {}]],
+        },
+      },
+    },
+  ]
+}
+
+export default prodConfig

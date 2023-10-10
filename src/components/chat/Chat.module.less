@@ -1,0 +1,49 @@
+.rtcChat {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 0px;
+  height: calc(100vh - 2 * 5px);
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  float: right;
+  transition: all 0.5s;
+  @openWidth: 500px;
+  &.open {
+    width: @openWidth;
+    border: 2px solid #444;
+  }
+  :global {
+    .send-tool {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 20px 0;
+      color: #444;
+      .tool {
+        cursor: pointer;
+      }
+    }
+    .send {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      width: 100%;
+      padding: 5px 10px 20px 10px;
+      border-top: 2px ;
+      .chat-input {
+        width: 80%;
+        padding: 5px 10px;
+        outline: none;
+        border: 1px solid #444;
+        border-radius: 4px;
+        background: transparent;
+        font-size: 1.15em;
+        letter-spacing: 0.005em;
+        color: #fff;
+        caret-color: #fff;
+      }
+    }
+  }
+}

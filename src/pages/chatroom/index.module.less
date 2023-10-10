@@ -1,0 +1,20 @@
+.chatRoom {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  :global {
+    .chat-room-body {
+      width: 100%;
+      float: left;
+      transition: all 0.5s;
+      &.open {
+        width: calc(100% - 500px);
+      }
+      &::after {
+        content: "";
+        clear: both;
+        display: block;
+      }
+    }
+  }
+}

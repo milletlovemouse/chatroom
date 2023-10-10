@@ -1,33 +1,29 @@
 {
   "compilerOptions": {
-    "target": "ESNext",                                                                        
+    "target": "ES5",                                                                        
     "jsx": "preserve", 
     "module": "ESNext",                                                
     "moduleResolution": "node",
     "rootDir": "./src",                     
-    "baseUrl": ".",                                  
+    "baseUrl": ".",      
+    "esModuleInterop": true,                                  
+    "allowSyntheticDefaultImports": true,                      
     "paths": {
-      "common/*": [
-        "src/common/*"
-      ],
-      "@/*": [
-        "src/*"
-      ]
-    },      
-    "strict": true,                                 
-    "sourceMap": true,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitReturns": true,
-    "importHelpers": true,
-    "noUnusedLocals": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUnusedParameters": true,
-    "noEmit": true,
-    "skipLibCheck": true                        
+      "/@/*": ["src/*"],
+      "@/*": ["src/*"],
+    }
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.tsx",
-  ]
+    "script/**/*",
+  ],
+  "ts-node": {
+    "esm": true,
+    "compilerOptions": {
+      "module": "CommonJS",
+      "moduleResolution": "NodeNext",
+    }
+  }
 }
