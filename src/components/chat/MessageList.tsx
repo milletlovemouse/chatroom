@@ -19,7 +19,10 @@ const MessageList = memo((props: Props) => {
   }, [props.messageList.length])
 
   function toBottom() {
-    scrollbar.current.scrollTop = scrollbar.current.scrollHeight
+    scrollbar.current.scrollTo({
+      top: scrollbar.current.scrollHeight,
+      behavior: 'smooth'
+    })
   }
 
   let show = false
@@ -34,8 +37,8 @@ const MessageList = memo((props: Props) => {
   }
 
   return (
-    <div className={style.container} ref={scrollbar} onScroll={scroll}>
-      <div className="message-list">
+    <div className={style.container}>
+      <div className="message-list" ref={scrollbar} onScroll={scroll}>
         {props.messageList.map(message => {
           return <div className={'message-item' + ' ' + (message.isSelf ? 'self' : '')} key={message.id}>
             <div className="message-avatar">

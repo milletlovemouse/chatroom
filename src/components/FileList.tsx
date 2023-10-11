@@ -4,6 +4,7 @@ import { Merge } from "../utils/type";
 import { MenuItem, MenuList } from "./menu/menu";
 import style from "./FileList.module.less";
 import useMenu from "../hooks/useMenu";
+import { useEditImage } from "./edit/EditImage";
 
 type Img = {
   file: File,
@@ -50,10 +51,10 @@ const FileList = memo((props: Props) => {
   function edit(value: Menu) {
     const { img } = value;
     const index = images.findIndex(item => item.file === img.file);
-    // close = useEditImage(img, (newImg) =>{
-    //   emits('updateImage', newImg, index);
-    //   close()
-    // });
+    close = useEditImage(img, (newImg) =>{
+      props.updateImage(newImg, index);
+      close()
+    });
   }
   
   function updateImage(newImg: Img, oldImg: Img) {

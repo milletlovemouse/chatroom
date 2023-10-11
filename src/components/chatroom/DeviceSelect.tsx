@@ -153,7 +153,7 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
       }
     } catch (error) {
       props.updateJoinDisable?.(true)
-      onError('以阻止页面访问摄像头或者麦克风，应用将无法正常使用')
+      onError('未能成功访问摄像头或者麦克风，应用无法正常使用')
       console.error(error.message);
       setTimeout(initDeviceInfo, 1000)
     }
@@ -182,7 +182,6 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
           suffixIcon={<AudioFilled style={iconStyle} />}
         >
         </Select>
-        &nbsp;
         <Button
           onClick={audioDisabledToggle}
           shape="circle"
@@ -198,7 +197,6 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
           suffixIcon={<span className="anticon" style={iconStyle}><Icon><Video48Filled /></Icon></span>}
         >
         </Select>
-        &nbsp;
         <Button
           onClick={cameraDisabledToggle}
           shape="circle"
@@ -208,6 +206,7 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
       {props.state ? (
         <span>
           &nbsp;
+          &nbsp;
           <Button
             onClick={dispalyEnabledToggle}
             icon={<span className="anticon" style={iconStyle}><Icon>{props.deviceInfo.dispalyEnabled ? <DeviceDesktopOff /> : <DeviceDesktop />}</Icon></span>}
@@ -216,6 +215,7 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
             {props.deviceInfo.dispalyEnabled ? '取消共享' : '共享屏幕'}
           </Button>
           &nbsp;
+          &nbsp;
           <Button
             shape="circle"
             type="primary"
@@ -223,6 +223,7 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
             onClick={chatBoxToggle}
             >
           </Button>
+          &nbsp;
           &nbsp;
           <Button 
             onClick={exit}

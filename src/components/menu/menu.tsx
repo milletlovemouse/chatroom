@@ -42,7 +42,7 @@ export const Menu = memo((props: Props) => {
   )
 })
 
-export function creatMenu(menuList: MenuList, style: Partial<CSSStyleDeclaration> = {}) {
+export function createMenu(menuList: MenuList, style: Partial<CSSStyleDeclaration> = {}) {
   const root = document.createElement('div')
   const rootStyle = {
     ...root.style,

@@ -1,4 +1,4 @@
-import { creatMenu, MenuList } from "../components/menu/menu";
+import { createMenu, MenuList } from "../components/menu/menu";
 
 const useMenu = (() => {
   const body = document.body
@@ -7,7 +7,7 @@ const useMenu = (() => {
   return (event: MouseEvent, menuList: MenuList) => {
     const { x, y } = event
     close()
-    close = creatMenu(menuList, {
+    close = createMenu(menuList, {
       display: 'inline-block',
       position: 'absolute',
       top: y + 'px',

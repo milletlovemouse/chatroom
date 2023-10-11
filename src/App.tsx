@@ -1,6 +1,6 @@
 import * as React from 'react'
 import ConfigProvider from 'antd/es/config-provider'
-import Layout from '/@/components/Layout/Layout'
+import Layout from './components/Layout'
 import { App as AntdApp } from 'antd';
 import { createContext } from 'react';
 import { message } from 'antd';
