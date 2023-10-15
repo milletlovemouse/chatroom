@@ -321,7 +321,9 @@ export const EditImage = memo((props: Props) => {
         const height = Number(cutInfotemp.height.replace('px', '')) * newHeight / oldHeight
         cutInfotemp.height = height + 'px'
       }
-      setCutInfo(cutInfotemp)
+      if (JSON.stringify(cutInfotemp) !== JSON.stringify(cutInfo)) {
+        setCutInfo(cutInfotemp)
+      }
     })
   }, [image.current, cutInfo])
 
@@ -355,8 +357,8 @@ export const EditImage = memo((props: Props) => {
     canvas.height = height
     const ctx = canvas.getContext('2d')
     ctx.drawImage(image.current, left, top, canvasWidth, canvasHeight, 0, 0, width, height)
-    const dataURL = canvas.toDataURL("image/png")
-    setCutState(false)
+    const dataURL = canvas.toDataURL(props.img.file.type)
+    setCutState(cutState = false)
     reset()
     props.save({
       url: dataURL,

@@ -6,7 +6,7 @@ import style from "./FileList.module.less";
 import useMenu from "../hooks/useMenu";
 import { useEditImage } from "./edit/EditImage";
 
-type Img = {
+export type Img = {
   file: File,
   url: string
 }
@@ -88,7 +88,7 @@ const FileList = memo((props: Props) => {
                     {
                       isImage(img.file)
                         ? <img
-                            // v-edit-image="{img, handler: updateImage, once: true}"
+                            onClick={() => {edit({img} as Menu)}}
                             src={img.url}
                             title={img.file.name}
                             alt={img.file.name}

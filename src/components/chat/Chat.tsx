@@ -1,4 +1,5 @@
-import React, { forwardRef, memo, Ref, useContext, useImperativeHandle, useMemo, useState } from 'react';
+import React, { forwardRef, memo, Ref, useContext, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import RTCClient from '@/utils/WebRTC/rtc-client';
 import { Context } from '@/pages/chatroom'
 import getFileTypeImage from '/@/utils/file-type-image';
 import { sliceFileAndBlobToBase64 } from '/@/utils/fileUtils';
@@ -8,8 +9,8 @@ import MessageList from '@/components/chat/MessageList';
 import { Icon } from '@ricons/utils';
 import { ImageOutline } from '@ricons/ionicons5';
 import { DriveFileMoveRound } from '@ricons/material';
-import usefileSelect, { AcceptType } from '/@/hooks/useFileSelect';
-import FileList from '@/components/FileList';
+import usefileSelect, { AcceptType, UploadConfig } from '/@/hooks/useFileSelect';
+import FileList, { Img } from '@/components/FileList';
 import { Button } from 'antd';
 
 type Props = {
@@ -33,7 +34,7 @@ export type MessageItem = {
 type FileInfo = Awaited<ReturnType<typeof getFileInfo>>
 
 const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {  
-  const rtc = useContext(Context)
+  const rtc = useContext<RTCClient>(Context)
   rtc.off('message')
   rtc.on('message', async (message: MessageItem) =>{
     message.isSelf = false
@@ -41,6 +42,7 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
     setMessageList([...messageList])
   })
 
+  const inputRef = useRef<HTMLInputElement>(null)
   const [inputValue, setInputValue] = useState('')
   const [messageList, setMessageList] = useState<MessageItem[]>([])
 
@@ -58,24 +60,20 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
     max: 1024 * 1024 * 1024,
   }
 
-  const fileSelect = async () => {
-    usefileSelect(selectFileConfig)
+  const fileSelect = (selectConfig: UploadConfig) => {
+    usefileSelect(selectConfig)
   }
 
   const maxlength = 100
-  const [fileMessageList, setFileMessageList] = useState<MessageItem[]>([])
-  const fileList = useMemo(() => fileMessageList.map(item => item.fileInfo), [fileMessageList])
+  const [fileMessageList, setFileMessageList] = useState<Img[]>([])
 
   function remove(_, index: number) {
     fileMessageList.splice(index, 1);
     setFileMessageList([...fileMessageList])
   }
 
-  function updateImage(img: FileInfo, index: number) {
-    fileMessageList[index].fileInfo = {
-      ...fileMessageList[index].fileInfo,
-      ...img
-    }
+  function updateImage(img: Img, index: number) {
+    fileMessageList[index].file = img.file
     setFileMessageList([...fileMessageList])
   }
 
@@ -104,12 +102,25 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
     messageList.push(messageItem)
     setInputValue('')
     setMessageList([...messageList])
+    inputRef.current.value = ''
     console.log('messageList', messageList);
   }
 
-  function sendFileMessage() {
+  async function sendFileMessage() {
     while(fileMessageList.length) {
-      const messageItem = fileMessageList.shift()
+      const fileItem = fileMessageList.shift()
+      const { username } = rtc.userInfo
+      const date = new Date
+      const { HHmmss } = formatDate(date)
+      const messageItem: MessageItem = {
+        id: crypto.randomUUID(),
+        isSelf: true,
+        username,
+        HHmmss,
+        type: 'file',
+        fileInfo: await getFileInfo(fileItem.file),
+        avatar: createAvatar(username[0])
+      }
       rtc.channelSendMesage(messageItem)
       messageList.push(messageItem)
       delete messageItem.fileInfo.chunks
@@ -120,23 +131,12 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
 
   async function uploadFile(files: File[], err: Error, inputFiles: File[]) {
     err && console.error(err);
-    const { username } = rtc.userInfo
-    const date = new Date
-    const { HHmmss } = formatDate(date)
-    Promise.all(files.map(async file => {
-      const messageItem: MessageItem = {
-        id: crypto.randomUUID(),
-        isSelf: true,
-        username,
-        HHmmss,
-        type: 'file',
-        fileInfo: await getFileInfo(file),
-        avatar: createAvatar(username[0])
+    setFileMessageList([...fileMessageList, ...files.map(file => {
+      return {
+        file,
+        url: getFileTypeImage(file.name)
       }
-      return messageItem
-    })).then((list) => {
-      setFileMessageList([...fileMessageList, ...list])
-    })
+    })])
   }
 
   function clearMessage() {
@@ -151,12 +151,13 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
     <div className={style.rtcChat + ' ' + (props.open ? style.open : '')}>
       <MessageList messageList={messageList} />
       <div className="send-tool">
-        <span className="tool" style={{fontSize: '1.75em'}}><Icon><ImageOutline onClick={fileSelect} /></Icon></span>
-        <span className="tool" style={{fontSize: '1.75em'}}><Icon><DriveFileMoveRound onClick={fileSelect} /></Icon></span>
+        <span className="tool" style={{fontSize: '1.75em'}}><Icon><ImageOutline onClick={() => fileSelect(selectImageConfig)} /></Icon></span>
+        <span className="tool" style={{fontSize: '1.75em'}}><Icon><DriveFileMoveRound onClick={() => fileSelect(selectFileConfig)} /></Icon></span>
       </div>
-      <FileList fileList={fileList} remove={remove} updateImage={updateImage}/>
+      <FileList fileList={fileMessageList} remove={remove} updateImage={updateImage}/>
       <div className="send">
         <input
+          ref={inputRef}
           className="chat-input"
           onInput={(e) => setInputValue((e.nativeEvent.target as HTMLInputElement).value)}
           onKeyUp={sendMessage}

@@ -5,6 +5,7 @@ import config  from './webpack.config.js'
 import MiniCssExtractPlugin  from 'mini-css-extract-plugin'
 import CssMinimizerPlugin from 'css-minimizer-webpack-plugin'
 import TerserPlugin from 'terser-webpack-plugin'
+import CopyPlugin from "copy-webpack-plugin"
 import Dotenv from 'dotenv-webpack'
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,7 +19,12 @@ const prodConfig = merge(config, {
     }),
     new Dotenv({
       path: path.resolve(__dirname, '../.env.production'), // 指定环境变量文件路径
-    })
+    }),
+    new CopyPlugin({
+      patterns: [
+        { from: path.resolve(__dirname, '../public'), to: path.resolve(__dirname, '../dist') },
+      ],
+    }),
   ],
   module: {
     rules: [

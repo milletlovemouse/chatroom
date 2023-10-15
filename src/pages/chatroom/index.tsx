@@ -7,7 +7,6 @@ import MemberList from '/@/components/chatroom/MemberList';
 import style from './index.module.less';
 import Chat, { RefType as ChatRef } from '/@/components/chat/Chat';
 
-let rtc: RTCClient
 export const Context = createContext(null);
 const ChatRoom: React.FC = () => {
   const [isInRoom, setIsInRoom] = useState(false);
@@ -50,11 +49,12 @@ const ChatRoom: React.FC = () => {
     }, ...connectorInfoList.filter(connectorInfo => connectorInfo.streamType === 'user')]
   },[connectorInfoList, localStream])
 
-  const host = process.env.SOCKET_HOST
-  const port = process.env.SOCKET_PORT as unknown as number
+  const host = location.host
+  const baseurl = process.env.BASE_URL
 
-  if (!rtc) {
-    rtc = new RTCClient({
+  let rtc = useRef<RTCClient>(null)
+  if (!rtc.current) {
+    rtc.current = new RTCClient({
       configuration: {
         iceServers: [
           {
@@ -65,29 +65,24 @@ const ChatRoom: React.FC = () => {
         ],
       },
       constraints: {
-        audio: deviceInfo.audioDisabled ? false : {
-          deviceId: deviceInfo.audioDeviceId
-        },
-        video: deviceInfo.cameraDisabled ? false : {
-          deviceId: deviceInfo.cameraDeviceId
-        }
+        audio: true,
+        video: true
       },
       socketConfig: {
         host,
-        port,
       }
     })
   } else {
-    rtc.off('connectorInfoListChange')
-    rtc.off('displayStreamChange')
-    rtc.off('localStreamChange')
+    rtc.current.off('connectorInfoListChange')
+    rtc.current.off('displayStreamChange')
+    rtc.current.off('localStreamChange')
   }
 
-  rtc.on('connectorInfoListChange', (data) => {
+  rtc.current.on('connectorInfoListChange', (data) => {
     setConnectorInfoList(data)
   })
   
-  rtc.on('displayStreamChange', async (stream) => {
+  rtc.current.on('displayStreamChange', async (stream) => {
     setDisplayStream(stream ? {
       streamType: 'display',
       connectorId: 'display',
@@ -100,17 +95,17 @@ const ChatRoom: React.FC = () => {
     })
   })
   
-  rtc.on('localStreamChange', async (stream) => {
+  rtc.current.on('localStreamChange', async (stream) => {
     setLocalStream(stream)
   })
 
   const join = useCallback((userInfo: { username: string, roomname: string }) => {
-    fetch(`${host}:${port}/checkUsername?${new URLSearchParams(userInfo).toString()}`, { method: 'GET' })
+    fetch(`${baseurl}/checkUsername?${new URLSearchParams(userInfo).toString()}`, { method: 'GET' })
       .then(response => response.json())
       .then(async data => {
         if (!data.isRepeat) {
           setIsInRoom(true)
-          rtc.join(userInfo)
+          rtc.current.join(userInfo)
           return
         }
         onError('房间内用户名已存在')
@@ -119,42 +114,58 @@ const ChatRoom: React.FC = () => {
         console.error(err);
         onError('检查用户名失败')
       })
-  }, [host, port, rtc])
+  }, [baseurl, rtc.current])
 
   // 麦克风设备切换禁用状态
   const audioDisabledToggle = (value: boolean) => {
     if (value) {
-      rtc.disableAudio()
+      rtc.current.disableAudio()
     } else {
-      rtc.enableAudio()
+      rtc.current.enableAudio().catch(() => {
+        onError('启用麦克风失败')
+        setDeviceInfo((deviceInfo) => {
+          return {
+            ...deviceInfo,
+            audioDisabled: true
+          }
+        })
+      })
     }
   }
   // 摄像头设备切换禁用状态
   const cameraDisabledToggle = (value: boolean) => {
     if (value) {
-      rtc.disableVideo()
+      rtc.current.disableVideo()
     } else {
-      rtc.enableVideo()
+      rtc.current.enableVideo().catch(() => {
+        onError('启用摄像头失败')
+        setDeviceInfo((deviceInfo) => {
+          return {
+            ...deviceInfo,
+            cameraDisabled: true
+          }
+        })
+      })
     }
   }
 
   // 麦克风设备切换处理事件
   const audioChange = (deviceId: string) => {
-    rtc.replaceAudioTrack(deviceId)
+    rtc.current.replaceAudioTrack(deviceId)
   }
 
   // 摄像头设备切换处理事件
   const cameraChange = (deviceId: string) => {
-    rtc.replaceVideoTrack(deviceId)
+    rtc.current.replaceVideoTrack(deviceId)
   }
 
   // 切换屏幕共享
   const shareDisplayMedia = async (value: boolean) => {
     if (!value) {
-      rtc.cancelShareDisplayMedia()
+      rtc.current.cancelShareDisplayMedia()
       return
     }
-    rtc.shareDisplayMedia().catch(() => {
+    rtc.current.shareDisplayMedia().catch(() => {
       setDeviceInfo({
         ...deviceInfo,
         dispalyEnabled: false
@@ -171,7 +182,7 @@ const ChatRoom: React.FC = () => {
 
   // 退出房间
   const exit = () => {
-    rtc.leave()
+    rtc.current.leave()
     setIsInRoom(false)
     setOpen(false)
     chat.current.clearMessage()
@@ -181,36 +192,69 @@ const ChatRoom: React.FC = () => {
   const close = (event: Event) => {
     event.preventDefault();
     exit()
-    rtc.close()
+    rtc.current.close()
   }
 
   useEffect(() => {
-    rtc.getLocalStream().then(async (stream) => {
+    rtc.current.getLocalStream().then(async (stream) => {
       setLocalStream(stream)
+    }).catch((e) => {
+      console.error(e)
     })
+
+    rtc.current.getAudioDeviceInfo().then((audio) => {
+      setDeviceInfo((deviceInfo) => {
+        return {
+          ...deviceInfo,
+          audioDeviceId: audio.deviceId
+        }
+      })
+    }).catch(() => {
+      setDeviceInfo((deviceInfo) => {
+        return {
+          ...deviceInfo,
+          audioDisabled: true
+        }
+      })
+    })
+    
+    rtc.current.getVideoDeviceInfo().then((video) => {
+      setDeviceInfo((deviceInfo) => {
+        return {
+          ...deviceInfo,
+          cameraDeviceId: video.deviceId
+        }
+      })
+    }).catch(() => {
+      setDeviceInfo((deviceInfo) => {
+        return {
+          ...deviceInfo,
+          cameraDisabled: true
+        }
+      })
+    })
+
     window.addEventListener('unload', close);
     return function cleanup() {
-      rtc.close()
+      rtc.current.close()
       window.removeEventListener('unload', close);
     }
   }, [])
   return (
-    <Context.Provider value={rtc}>
+    <Context.Provider value={rtc.current}>
       <div className={style.chatRoom}>
         <div className={'chat-room-body'  + ' ' + (open ? 'open' : '')}>
           {!isInRoom
-            ? <Join stream={localStream} joinDisable={joinDisable} join={join}></Join>
+            ? <Join stream={localStream} join={join}></Join>
             : <MemberList memberList={memberList} mainStream={displayStream}></MemberList>
           }
           <div className="chat-room-tool">
             <DeviceSelect
               ref={deviceSelect}
               deviceInfo={deviceInfo}
-              joinDisable={joinDisable}
               state={isInRoom}
               open={open}
-              updateDeviceInfo={value => setDeviceInfo(value)}
-              updateJoinDisable={value => {setJoinDisable(value)}}
+              updateDeviceInfo={value => setDeviceInfo((deviceInfo) => ({ ...deviceInfo, ...value}))}
               onAudioChange={audioChange}
               onCameraChange={cameraChange}
               onAudioDisabledToggle={audioDisabledToggle}

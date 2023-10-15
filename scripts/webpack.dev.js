@@ -13,6 +13,20 @@ const devConfig = merge(config, {
   devServer: {
 	  open: true, // 编译完自动打开浏览器
     port: 8080,
+    compress: true,
+    hot: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        pathRewrite: { '^/api': '' },
+        changeOrigin: true,
+        secure: false,
+      },
+      '/socket.io': {
+        target: 'http://localhost:3000',
+        ws: true,
+      },
+    },
   },
   plugins: [
     new Dotenv({

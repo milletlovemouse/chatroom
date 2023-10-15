@@ -1,5 +1,3 @@
-import { useEffect } from "react"
-
 export default function useResizeObserver(target: Element, callback: ResizeObserverCallback) {
   let resizeObserver: ResizeObserver
   const disconnect = () => {

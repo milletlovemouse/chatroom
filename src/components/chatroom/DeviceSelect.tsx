@@ -5,13 +5,14 @@ import { Video48Regular, VideoOff48Regular, Video48Filled } from '@ricons/fluent
 import { DeviceDesktop, DeviceDesktopOff } from '@ricons/tabler'
 import { ExitToAppFilled } from '@ricons/material'
 import { ChatboxEllipsesOutline } from '@ricons/ionicons5'
-import React, { forwardRef, memo, Ref, useEffect, useImperativeHandle, useState } from "react";
-import MediaDevices, { DeviceInfo } from "/@/utils/MediaDevices/mediaDevices";
+import React, { forwardRef, memo, Ref, useContext, useEffect, useImperativeHandle, useState, useRef } from "react";
+import { DeviceInfo } from "/@/utils/MediaDevices/mediaDevices";
+import RTCClient from '@/utils/WebRTC/rtc-client';
 import { onError } from "/@/utils/WebRTC/message";
+import { Context } from "/@/pages/chatroom";
 
 export interface Emits {
   updateDeviceInfo?: (deviceInfo: Props['deviceInfo']) => void;
-  updateJoinDisable?: (joinDisable: boolean) => void;
   onAudioChange?: (deviceId: string) => void;
   onCameraChange?: (deviceId: string) => void;
   onAudioDisabledToggle?: (disable: boolean) => void;
@@ -29,7 +30,6 @@ export interface Props extends Emits {
     dispalyEnabled: boolean;
   };
   state: boolean;
-  joinDisable: boolean;
   open: boolean
 }
 
@@ -39,6 +39,7 @@ export type RefType = {
 }
 
 const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
+  const rtc = useContext<RTCClient>(Context)
   const fieldNames = { value: 'deviceId' }
   const iconStyle = {
     fontSize: '1.3em'
@@ -48,10 +49,8 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
   let [audioMediaStreamTrackOptions, setAudioMediaStreamTrackOptions] = useState<Options>([])
   let [cameraMediaStreamTrackOptions, setCameraMediaStreamTrackOptions] = useState<Options>([])
   
-  let deviceInfo: Props['deviceInfo'] = { ...props.deviceInfo }
   const updataModelValue = (data: Partial<Props['deviceInfo']>) => {
-    deviceInfo = { ...deviceInfo, ...data } // update:modelValue异步防抖更新，将修改的数据保存
-    props.updateDeviceInfo?.({ ...props.deviceInfo, ...deviceInfo })
+    props.updateDeviceInfo?.({ ...props.deviceInfo, ...data })
   }
 
   // 麦克风设备切换禁用状态
@@ -129,34 +128,45 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
     }
   }
 
-  const mediaDevices = new MediaDevices({
-    audio: true,
-    video: true
-  })
-  async function initDeviceInfo() {
+  let videoTips = useRef(true)
+  async function initVideoDevice() {
     try {
-      const deviceInfoList = await MediaDevices.enumerateDevices()
-      const map = new Map<string, DeviceInfo[]>()
-      deviceInfoList.forEach((deviceInfo: DeviceInfo) => {
-        const list = map.get(deviceInfo.kind) || []
-        list.push(deviceInfo)
-        map.set(deviceInfo.kind, list)
-      })
-      audioMediaStreamTrackOptions = map.get('audioinput') as Options
-      cameraMediaStreamTrackOptions = map.get('videoinput') as Options
-      setAudioMediaStreamTrackOptions(audioMediaStreamTrackOptions)
-      setCameraMediaStreamTrackOptions(cameraMediaStreamTrackOptions)
-      if (!props.deviceInfo.audioDeviceId || !props.deviceInfo.cameraDeviceId) {
-        const tracks = await mediaDevices.getUserMediaStreamTracks()
-        updateDeviceId(tracks)
-        props.updateJoinDisable?.(false)
-      }
+      await navigator.mediaDevices.getUserMedia({ video: true })
+      const deviceInfoList = await rtc.getDevicesInfoList()
+      setCameraMediaStreamTrackOptions(deviceInfoList.filter(info => info.kind === 'videoinput'))
     } catch (error) {
-      props.updateJoinDisable?.(true)
-      onError('未能成功访问摄像头或者麦克风，应用无法正常使用')
-      console.error(error.message);
-      setTimeout(initDeviceInfo, 1000)
+      if (videoTips.current) {
+        onError('未能成功访问摄像头')
+        console.error(error.message, error.name);
+      }
+      if (error.name !== 'NotFoundError') {
+        setTimeout(initVideoDevice, 1000)
+        videoTips.current = false
+      }
     }
+  }
+  
+  let audioTips = useRef(true)
+  async function initAudioDevice() {
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true })
+      const deviceInfoList = await rtc.getDevicesInfoList()
+      setAudioMediaStreamTrackOptions(deviceInfoList.filter(info => info.kind === 'audioinput'))
+    } catch (error) {
+      if (audioTips.current) {
+        onError('未能成功访问麦克风')
+        console.error(error.message, error.name);
+      }
+      if (error.name !== 'NotFoundError') {
+        setTimeout(initAudioDevice, 1000)
+        audioTips.current = false
+      }
+    }
+  }
+
+  async function initDeviceInfo() {
+    initVideoDevice()
+    initAudioDevice()
   }
 
   useImperativeHandle(ref, () => {

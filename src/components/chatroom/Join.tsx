@@ -5,28 +5,25 @@ import UserIcon from '@/components/user-icon';
 
 type JoinProps = {
   stream: MediaStream;
-  joinDisable: boolean;
   join: (value: {
     roomname: string;
     username: string
   }) => void
 }
 
-const Join: React.FC<JoinProps> = memo(({stream, joinDisable, join}) => {
+const Join: React.FC<JoinProps> = memo(({stream, join}) => {
   const [roomname, setRoomname] = useState('');
   const [username, setUsername] = useState('');
-  const className = joinDisable ? 'submit disabled' : 'submit';
   
   const setVideo = useCallback((v: HTMLVideoElement) => {
     if (!v) return
     v.srcObject = stream;
-    v.load();
+    // v.load();
     v.play();
   }, [stream])
 
   const submit = (e: Event) => {
     e.preventDefault()
-    if (joinDisable) return
     join({
       roomname,
       username
@@ -57,7 +54,7 @@ const Join: React.FC<JoinProps> = memo(({stream, joinDisable, join}) => {
           <span>Username</span>
           <i></i>
         </div>
-        <input className={className} type="submit" value="加入房间" />
+        <input className="submit" type="submit" value="加入房间" />
       </form>
     </div>
   )

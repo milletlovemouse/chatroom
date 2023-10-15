@@ -18,11 +18,13 @@ const MessageList = memo((props: Props) => {
     toBottom()
   }, [props.messageList.length])
 
-  function toBottom() {
-    scrollbar.current.scrollTo({
-      top: scrollbar.current.scrollHeight,
-      behavior: 'smooth'
-    })
+  function toBottom() {    
+    setTimeout(() => {
+      scrollbar.current.scrollTo({
+        top: scrollbar.current.scrollHeight,
+        behavior: 'smooth'
+      })
+    }, 50)
   }
 
   let show = false
