@@ -18,8 +18,9 @@ const Join: React.FC<JoinProps> = memo(({stream, join}) => {
   const setVideo = useCallback((v: HTMLVideoElement) => {
     if (!v) return
     v.srcObject = stream;
-    // v.load();
-    v.play();
+    v.onloadedmetadata = () => {
+      v.play();
+    };
   }, [stream])
 
   const submit = (e: Event) => {

@@ -16,8 +16,9 @@ const MemberList = memo((props: Props) => {
   const setVideo = (v: HTMLVideoElement, stream: MediaStream) => {
     if (!v) return
     v.srcObject = stream
-    // v.load()
-    v.play()    
+    v.onloadedmetadata = () => {
+      v.play();
+    }; 
   }
   const setAudio = (a: HTMLAudioElement, stream: MediaStream) => {
     if (!a) return

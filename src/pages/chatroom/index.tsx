@@ -165,7 +165,8 @@ const ChatRoom: React.FC = () => {
       rtc.current.cancelShareDisplayMedia()
       return
     }
-    rtc.current.shareDisplayMedia().catch(() => {
+    rtc.current.shareDisplayMedia().catch((err) => {
+      onError(err.message)
       setDeviceInfo({
         ...deviceInfo,
         dispalyEnabled: false
