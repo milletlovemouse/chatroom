@@ -180,7 +180,7 @@ export const EditImage = memo((props: Props) => {
     }
 
     function updateLeft() {
-      width = right - x
+      width = Math.max(right - x, 0)
       setCutInfo((cutInfo) => ({
         ...cutInfo,
         left: (x - parentLeft) + 'px',
@@ -188,7 +188,7 @@ export const EditImage = memo((props: Props) => {
       }))
     }
     function updateTop() {
-      height = bottom - y
+      height = Math.max(bottom - y, 0)
       setCutInfo((cutInfo) => ({
         ...cutInfo,
         top: (y - parentTop) + 'px',
@@ -196,14 +196,14 @@ export const EditImage = memo((props: Props) => {
       }))
     }
     function updateWidth() {
-      width = x - left
+      width = Math.max(x - left, 0)
       setCutInfo((cutInfo) => ({
         ...cutInfo,
         width: width + 'px'
       }))
     }
     function updateHeight() {
-      height = y - top
+      height = Math.max(y - top, 0)
       setCutInfo((cutInfo) => ({
         ...cutInfo,
         height: height + 'px'
