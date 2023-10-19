@@ -40,7 +40,7 @@ const Join: React.FC<JoinProps> = memo(({stream, join}) => {
     <div className={style.chatJoin}>
       <div className="video-box">
         {!!stream
-          ? <video ref={setVideo}></video>
+          ? <video ref={setVideo} muted></video>
           : <UserIcon />
         }
       </div>

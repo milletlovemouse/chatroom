@@ -1,6 +1,7 @@
-import React, { memo, useMemo } from "react";
+import React, { memo, useMemo, useEffect, useRef } from "react";
 import UserIcon from "../user-icon";
 import { ConnectorInfoList, StreamType } from "/@/utils/WebRTC/rtc-client";
+import { audioVisible } from "@/utils/audio/audioVisualizer";
 import style from './MemberList.module.less'
 
 type Props = {
@@ -35,6 +36,22 @@ const MemberList = memo((props: Props) => {
       }
     })
   }, [props.memberList])
+  
+  let closes = useRef<(() => void)[]>([])
+  closes.current.forEach((close) => close())
+  closes.current = []
+
+  function setCanvas(c: HTMLCanvasElement, stream: MediaStream, index: number) {
+    if (!c) return
+    closes.current[index] = audioVisible(stream, c)
+  }
+
+  useEffect(function onUnmounted() {
+    return () => {
+      closes.current.forEach((close) => close())
+      closes.current = []
+    }
+  }, [])
 
   const display = useMemo(() => mainStream ? 'block' : 'grid', [mainStream])
 
@@ -71,21 +88,27 @@ const MemberList = memo((props: Props) => {
         background,
       }}>
         {
-          memberList.map(connectorInfo => {
+          memberList.map((connectorInfo, index) => {
+            const canvas = connectorInfo.audioActive
+              ? <canvas ref={(c: HTMLCanvasElement) => {setCanvas(c, connectorInfo.remoteStream, index)}} width="30" height="30" style={{ borderRadius: '50%' }}></canvas>
+              : ''
+            if (!connectorInfo.audioActive) closes.current[index] = () => {}
             if (connectorInfo.videoActive) {
               return (
                 <div className="video-box" key={connectorInfo.connectorId}>
-                  <video ref={(v: HTMLVideoElement) => setVideo(v, connectorInfo.remoteStream)}></video>
+                  <video ref={(v: HTMLVideoElement) => setVideo(v, connectorInfo.remoteStream)} muted={connectorInfo.connectorId ==='local'}></video>
+                  {canvas}
                 </div>
               )
             } else {
               return (
                 <div className="video-box" key={connectorInfo.connectorId}>
                   <UserIcon style={{border: `2px solid #444`}} />
-                  {connectorInfo.audioActive
+                  {connectorInfo.connectorId !=='local' && connectorInfo.audioActive
                     ? <audio ref={(a: HTMLAudioElement) => setAudio(a, connectorInfo.remoteStream)}></audio>
                     : ''
                   }
+                  {canvas}
                 </div>
               )
             }
