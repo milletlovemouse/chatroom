@@ -1,4 +1,3 @@
-import { message } from 'antd';
 import { fileAndBlobToBase64 } from '../fileUtils';
 import { useError, useSuccess } from '../message';
 

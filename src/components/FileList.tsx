@@ -92,6 +92,7 @@ const FileList = memo((props: Props) => {
                             src={img.url}
                             title={img.file.name}
                             alt={img.file.name}
+                            style={{cursor: "zoom-in"}}
                           />
                         : <img
                             src={img.url}

@@ -47,12 +47,12 @@ const Join: React.FC<JoinProps> = memo(({stream, join}) => {
       <form ref={setForm} className="form">
         <div className="input-box">
           <Input value={roomname} onChange={(e) => setRoomname(e.target.value)} bordered={false} required />
-          <span>Roomname</span>
+          <span>房间名</span>
           <i></i>
         </div>
         <div className="input-box">
           <Input value={username} onChange={(e) => setUsername(e.target.value)} bordered={false} required />
-          <span>Username</span>
+          <span>用户名</span>
           <i></i>
         </div>
         <input className="submit" type="submit" value="加入房间" />

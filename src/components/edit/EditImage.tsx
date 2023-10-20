@@ -427,7 +427,7 @@ export const EditImage = memo((props: Props) => {
   )
 })
 
-export function useEditImage(img: Img | Img, save?: Save){
+export function useEditImage(img: Img, save?: Save){
   const root = document.createElement('div')
   const style = {
     position: 'absolute',
