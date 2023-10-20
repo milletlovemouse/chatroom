@@ -1,11 +1,12 @@
 import { CopyFilled, DownloadOutlined } from "@ant-design/icons";
 import React, { memo, useMemo } from "react";
-import { MenuItem, MenuList } from "../menu/menu";
+import { MenuItem, MenuList } from "@/components/menu/menu";
 import { writeClipImg } from "/@/utils/Clipboard/clipboard";
 import { fileToBlob, saveFile } from "/@/utils/fileUtils";
 import { Merge } from "/@/utils/type";
 import style from "./messageFile.module.less";
 import useMenu from "/@/hooks/useMenu";
+import { usePriviewImage } from "@/components/preview/PreviewImage";
 
 type Props = {
   fileInfo: Record<string, any>
@@ -54,6 +55,13 @@ const MessageFile = memo((props: Props) => {
     if (!image) return;
     image.src = URL.createObjectURL(props.fileInfo.file)
   }
+
+  const onPreview = () => {
+    usePriviewImage({
+      url: URL.createObjectURL(props.fileInfo.file),
+      name: props.fileInfo.name,
+    });
+  }
   
   const onContextmenu = (event: React.MouseEvent, menuList: MenuList, file: File) => {
     event.preventDefault();
@@ -76,9 +84,11 @@ const MessageFile = memo((props: Props) => {
             {isImage
               ? <img
                   ref={setImage}
+                  onClick={onPreview}
                   onContextMenu={(e) => onContextmenu(e, imageMenuList, props.fileInfo.file)}
                   title={props.fileInfo.name}
                   alt={props.fileInfo.name}
+                  style={{cursor: "zoom-in"}}
                 />
               : <img
                   onContextMenu={(e) => onContextmenu(e, otherMenuList, props.fileInfo.file)}
