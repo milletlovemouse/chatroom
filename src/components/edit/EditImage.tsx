@@ -1,9 +1,9 @@
 import { SaveOutlined, ScissorOutlined, CloseOutlined } from "@ant-design/icons";
-import { getImageOriginalSize } from "./util";
+import { getPrimitiveImage } from "./util";
 import style from "./EditImage.module.less"
 import { base64ToFile } from "/@/utils/fileUtils";
 import useResizeObserver from "/@/hooks/useResizeObserver";
-import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as ReactDOM from "react-dom/client";
 
 export type Img = {
@@ -31,14 +31,6 @@ type Props = {
 }
 
 export const EditImage = memo((props: Props) => {
-  // 图片文件的尺寸
-  const originalSize = useRef<{ width?: number, height?: number }>({})
-  useEffect(() => {(async () => {
-    const { width, height } = await getImageOriginalSize(props.img.file)
-    originalSize.current.width = width
-    originalSize.current.height = height
-  })()}, [props.img.file])
-
   const root = useRef<HTMLDivElement>(null)
   const image = useRef<HTMLImageElement>(null)
   // const canvas = useRef<HTMLCanvasElement>(null)
@@ -343,27 +335,38 @@ export const EditImage = memo((props: Props) => {
     setCutState(cutState = !cutState)
     reset()
   }
-  const save = (e: React.MouseEvent) => {
+
+  const [img, setImg] = useState(props.img)
+  useEffect(() => {
+    setImg(props.img)
+  }, [props.img.file, props.img.url])
+  
+  const save = async (e: React.MouseEvent) => {
     if (!region.current) return
     e.stopPropagation()
     const canvas = document.createElement('canvas')
-    const { width: imgWidth, height: imgHeight } = image.current.getBoundingClientRect()
     const { width, height } = region.current.getBoundingClientRect()
-    const left = Number(cutInfo.left.replace('px', '')) * originalSize.current.width / imgWidth
-    const top = Number(cutInfo.top.replace('px', '')) * originalSize.current.height / imgHeight
-    const canvasWidth = width * originalSize.current.width / imgWidth
-    const canvasHeight = height * originalSize.current.height / imgHeight
-    canvas.width = width
-    canvas.height = height
+    const { width: imgWidth, height: imgHeight } = image.current.getBoundingClientRect()
+    const { image: primitiveImage, close } = await getPrimitiveImage(img.file)
+    const { width: primitiveW, height: primitiveH } = primitiveImage
+    const left = Number(cutInfo.left.replace('px', '')) * primitiveW / imgWidth
+    const top = Number(cutInfo.top.replace('px', '')) * primitiveH / imgHeight
+    const canvasWidth = width * primitiveW / imgWidth
+    const canvasHeight = height * primitiveH / imgHeight
+    canvas.width = canvasWidth
+    canvas.height = canvasHeight
     const ctx = canvas.getContext('2d')
-    ctx.drawImage(image.current, left, top, canvasWidth, canvasHeight, 0, 0, width, height)
-    const dataURL = canvas.toDataURL(props.img.file.type)
+    ctx.drawImage(primitiveImage, left, top, canvasWidth, canvasHeight, 0, 0, canvasWidth, canvasHeight)
+    const dataURL = canvas.toDataURL(img.file.type)
+    const newImg = {
+      url: dataURL,
+      file: base64ToFile(dataURL, img.file.name)
+    }
+    props.save(newImg, img)
+    setImg(newImg)
     setCutState(cutState = false)
     reset()
-    props.save({
-      url: dataURL,
-      file: base64ToFile(dataURL, props.img.file.name)
-    }, props.img)
+    close()
   }
   const reset = () => {
     if (!cutState) {
@@ -405,7 +408,7 @@ export const EditImage = memo((props: Props) => {
       <div className="close" onClick={props.close}><CloseOutlined /></div>
       <div className="mask-layer"></div>
       <div className="edit-image-container">
-        <img ref={image} className="image" src={props.img.url} alt={props.img.file.name} />
+        <img ref={image} className="image" src={img.url} alt={img.file.name} />
         {/* <canvas ref={canvas} class={style.canvas}></canvas> */}
         { cutState
           ? <div className="cut">

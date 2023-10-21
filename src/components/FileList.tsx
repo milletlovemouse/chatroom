@@ -1,5 +1,5 @@
 import { DeleteFilled, EditFilled } from "@ant-design/icons";
-import React, { memo, useMemo } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Merge } from "../utils/type";
 import { MenuItem, MenuList } from "./menu/menu";
 import style from "./FileList.module.less";
@@ -25,6 +25,8 @@ const FileList = memo((props: Props) => {
     file: fileItem.file,
     url: isImage(fileItem.file) ? URL.createObjectURL(fileItem.file) : fileItem.url
   })), [props.fileList])
+  const imageRef = useRef<Array<Img>>([])
+  imageRef.current = images
   
   const menuList: MenuList = [
     {
@@ -47,24 +49,20 @@ const FileList = memo((props: Props) => {
   }
   
   type Menu = Merge<MenuItem, {img: Img}>;
-  let close = () => {}
   function edit(value: Menu) {
-    const { img } = value;
-    const index = images.findIndex(item => item.file === img.file);
-    close = useEditImage(img, (newImg) =>{
-      props.updateImage(newImg, index);
-      close()
+    useEditImage(value.img, (newImg, oldImg) =>{
+      updateImage(newImg, oldImg);
     });
   }
   
   function updateImage(newImg: Img, oldImg: Img) {
-    const index = images.findIndex(item => item === oldImg);
+    const index = imageRef.current.findIndex(item => item.file === oldImg.file);
     props.updateImage(newImg, index);
   }
   
   function remove(value: Menu) {
     const { img } = value;
-    const index = images.findIndex(item => item.file === img.file);
+    const index = imageRef.current.findIndex(item => item.file === img.file);
     props.remove(img, index);
   }
 
