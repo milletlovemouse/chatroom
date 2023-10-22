@@ -11,6 +11,14 @@ export type Img = {
   url: string
 }
 
+export type CssStyle = {
+  width?: number;
+  height?: number;
+  left?: number;
+  top?: number;
+  opacity?: number;
+}
+
 export type Save = (newImg: Img, oldImg: Img ) => void;
 
 enum Position {
@@ -27,7 +35,8 @@ enum Position {
 type Props = {
   img: Img,
   save: Save,
-  close?: () => void
+  close: () => void,
+  from?: CssStyle
 }
 
 export const EditImage = memo((props: Props) => {
@@ -394,7 +403,47 @@ export const EditImage = memo((props: Props) => {
     }
   }
 
+  const [showToolBar, setShowToolBar] = useState(!props.from)
+  const from = useMemo(() => {
+    if (props.from) {
+      const clientWidth = window.innerWidth
+      const clientHeight = window.innerHeight
+      const parentLeft = window.innerWidth / 20
+      const parentTop = window.innerHeight / 20
+      const parentMaxWidth = window.innerWidth - parentLeft * 2
+      const parentMaxHeight = window.innerHeight - parentTop * 2
+      const from = {...props.from}
+      from.left = Math.min(from.left - (clientWidth - Math.min(from.width, parentMaxWidth)) / 2, from.left)
+      from.top = Math.min(from.top - (clientHeight - Math.min(from.height, parentMaxHeight)) / 2, from.top)
+      Object.keys(from).forEach(key => {
+        from[key] = from[key] + 'px'
+      })
+      from.opacity = 0.5
+      return from
+    } 
+    return {}
+  }, [props.from])
+  const [transition, setTransition] = useState(from)
+  const close = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (props.from) {
+      setTransition(from)
+      setShowToolBar(false)
+      image.current.ontransitionend = () => {
+        props.close()
+      }
+    } else {
+      props.close()
+    }
+  }
+
   useEffect(() => {
+    if (props.from) {
+      setTransition({})
+      image.current.ontransitionend = () => {
+        setShowToolBar(true)
+      }
+    }
     return () => {
       document.removeEventListener('mousedown', updateDown)
       document.removeEventListener('mouseup', updateDown)
@@ -405,10 +454,18 @@ export const EditImage = memo((props: Props) => {
   }, [])
   return (
     <div ref={root} className={style.editImage}>
-      <div className="close" onClick={props.close}><CloseOutlined /></div>
+      <div className="close" onClick={close}><CloseOutlined /></div>
       <div className="mask-layer"></div>
       <div className="edit-image-container">
-        <img ref={image} className="image" src={img.url} alt={img.file.name} />
+        <img
+          ref={image}
+          style={{
+            ...transition
+          }}
+          className="image"
+          src={img.url}
+          alt={img.file.name}
+        />
         {/* <canvas ref={canvas} class={style.canvas}></canvas> */}
         { cutState
           ? <div className="cut">
@@ -421,16 +478,22 @@ export const EditImage = memo((props: Props) => {
               <div ref={rightEl} className="right"></div>
             </div>
           : null }
-        <div className="toolbar" onMouseDown={(e) => e.stopPropagation()}>
-          <ScissorOutlined title="裁剪" onClick={cut} />
-          <SaveOutlined title="保存" onClick={save} />
-        </div>
+        { showToolBar ?
+          <div className="toolbar" onMouseDown={(e) => e.stopPropagation()}>
+            <ScissorOutlined title="裁剪" onClick={cut} />
+            <SaveOutlined title="保存" onClick={save} />
+          </div>
+          : null }
       </div>
     </div>
   )
 })
 
-export function useEditImage(img: Img, save?: Save){
+export function useEditImage(img: Img, options: {
+  save: Save,
+  from?: CssStyle
+}){
+  const { save, from } = options || {}
   const root = document.createElement('div')
   const style = {
     position: 'absolute',
@@ -444,7 +507,7 @@ export function useEditImage(img: Img, save?: Save){
     app.unmount()
     root.remove()
   }
-  app.render(<EditImage img={img} save={save} close={close} />)
+  app.render(<EditImage img={img} save={save} close={close} from={from} />)
 
   document.body.appendChild(root)
   return close

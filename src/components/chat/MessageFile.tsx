@@ -56,10 +56,18 @@ const MessageFile = memo((props: Props) => {
     image.src = URL.createObjectURL(props.fileInfo.file)
   }
 
-  const onPreview = () => {
+  const onPreview = (e: MouseEvent) => {
+    const { width, height, left, top } = (e.target as HTMLElement).getBoundingClientRect()
+    console.log((e.target as HTMLElement).getBoundingClientRect());
+    
     usePriviewImage({
       url: URL.createObjectURL(props.fileInfo.file),
       name: props.fileInfo.name,
+    }, {
+      width,
+      height,
+      left,
+      top,
     });
   }
   
@@ -84,7 +92,7 @@ const MessageFile = memo((props: Props) => {
             {isImage
               ? <img
                   ref={setImage}
-                  onClick={onPreview}
+                  onClick={(e) => onPreview(e.nativeEvent)}
                   onContextMenu={(e) => onContextmenu(e, imageMenuList, props.fileInfo.file)}
                   title={props.fileInfo.name}
                   alt={props.fileInfo.name}

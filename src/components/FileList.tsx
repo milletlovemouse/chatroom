@@ -4,7 +4,7 @@ import { Merge } from "../utils/type";
 import { MenuItem, MenuList } from "./menu/menu";
 import style from "./FileList.module.less";
 import useMenu from "../hooks/useMenu";
-import { useEditImage } from "./edit/EditImage";
+import { CssStyle, useEditImage } from "./edit/EditImage";
 
 export type Img = {
   file: File,
@@ -47,11 +47,28 @@ const FileList = memo((props: Props) => {
     }
     return [{...menuList[1], img}]
   }
-  
+
+  const imgRefs = useRef<WeakMap<File, HTMLElement>>(new WeakMap())
+  const setImage = (img: Img, el: HTMLElement) => {
+    imgRefs.current.set(img.file, el)
+  }
+
   type Menu = Merge<MenuItem, {img: Img}>;
-  function edit(value: Menu) {
-    useEditImage(value.img, (newImg, oldImg) =>{
-      updateImage(newImg, oldImg);
+  function edit(value: Menu, e: MouseEvent) {
+    const { width, height, left, top } = (e?.target as HTMLElement || imgRefs.current.get(value.img.file)).getBoundingClientRect()
+    const from = {
+      width,
+      height,
+      left,
+      top
+    }
+    console.log(from);
+    
+    useEditImage(value.img, {
+      save: (newImg, oldImg) =>{
+        updateImage(newImg, oldImg);
+      },
+      from
     });
   }
   
@@ -86,7 +103,8 @@ const FileList = memo((props: Props) => {
                     {
                       isImage(img.file)
                         ? <img
-                            onClick={() => {edit({img} as Menu)}}
+                            ref={(i) => setImage(img, i)}
+                            onClick={(e) => {edit({img} as Menu, e.nativeEvent)}}
                             src={img.url}
                             title={img.file.name}
                             alt={img.file.name}
