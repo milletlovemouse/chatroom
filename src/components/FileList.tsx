@@ -62,8 +62,6 @@ const FileList = memo((props: Props) => {
       left,
       top
     }
-    console.log(from);
-    
     useEditImage(value.img, {
       save: (newImg, oldImg) =>{
         updateImage(newImg, oldImg);

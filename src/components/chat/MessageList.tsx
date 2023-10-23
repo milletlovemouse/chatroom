@@ -1,5 +1,5 @@
 import React, { forwardRef, memo, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "antd";
+import { Button, Avatar } from "antd";
 import { Icon } from "@ricons/utils";
 import { DownToBottom } from '@ricons/carbon';
 import { MessageItem } from '@/components/chat/Chat'
@@ -43,9 +43,7 @@ const MessageList = memo((props: Props) => {
       <div className="message-list" ref={scrollbar} onScroll={scroll}>
         {props.messageList.map(message => {
           return <div className={'message-item' + ' ' + (message.isSelf ? 'self' : '')} key={message.id}>
-            <div className="message-avatar">
-              <img src={message.avatar} />
-            </div>
+            <Avatar className="message-avatar" size={50}>{ message.username[0] }</Avatar>
             <div className="message-main">
               <div className="message-username">{ message.username }</div>
               <div className="message-content">

@@ -29,7 +29,6 @@ export type MessageItem = {
   type: 'file' | 'text';
   text?: string;
   fileInfo?: FileInfo;
-  avatar: ReturnType<typeof createAvatar>;
 }
 type FileInfo = Awaited<ReturnType<typeof getFileInfo>>
 
@@ -77,11 +76,14 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
     setFileMessageList([...fileMessageList])
   }
 
-  function sendMessage(e: React.SyntheticEvent) {
+  const [loading, setLoading] = useState(false)
+  async function sendMessage(e: React.SyntheticEvent) {
     if (e.type === 'keyup' && (e as React.KeyboardEvent).code !== 'Enter') return
-    if (inputValue.length > maxlength) return
+    if (inputValue.length > maxlength || loading) return
+    setLoading(true)
     sendTextMessage()
-    sendFileMessage()
+    await sendFileMessage()
+    setLoading(false)
   }
 
   function sendTextMessage() {
@@ -95,8 +97,7 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
       id: crypto.randomUUID(),
       isSelf: true,
       HHmmss,
-      text: inputValue,
-      avatar: createAvatar(username[0])
+      text: inputValue
     }
     rtc.channelSendMesage(messageItem)
     messageList.push(messageItem)
@@ -118,8 +119,7 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
         username,
         HHmmss,
         type: 'file',
-        fileInfo: await getFileInfo(fileItem.file),
-        avatar: createAvatar(username[0])
+        fileInfo: await getFileInfo(fileItem.file)
       }
       rtc.channelSendMesage(messageItem)
       messageList.push(messageItem)
@@ -163,8 +163,9 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
           onKeyUp={sendMessage}
           placeholder="请输入消息内容"
           maxLength={maxlength}
+          disabled={loading}
         />
-        <Button type="primary" size="large" onClick={sendMessage}>Send</Button>
+        <Button type="primary" size="large" loading={loading} onClick={sendMessage}>发送</Button>
       </div>
     </div>
   )
@@ -191,19 +192,6 @@ async function getFileInfo(file: File) {
     chunks,
     url
   }
-}
-
-function createAvatar(text: string) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 50;
-  canvas.height = 50;
-  const cans = canvas.getContext("2d");
-  cans.font = "2em Microsoft JhengHei"; //字体
-  cans.fillStyle = "#333"; //字体填充颜色
-  cans.textAlign = "left"; //对齐方式
-  cans.textBaseline = "middle"
-  cans.fillText(text, canvas.width / 3, canvas.height / 2); //被填充的文本
-  return canvas.toDataURL("image/png")
 }
 
 export default Chat;

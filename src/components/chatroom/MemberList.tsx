@@ -1,5 +1,5 @@
 import React, { memo, useMemo, useEffect, useRef } from "react";
-import UserIcon from "../user-icon";
+import UserIcon from "../UserIcon";
 import { ConnectorInfoList, StreamType } from "/@/utils/WebRTC/rtc-client";
 import { audioVisible } from "@/utils/audio/audioVisualizer";
 import style from './MemberList.module.less'

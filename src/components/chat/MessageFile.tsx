@@ -58,8 +58,6 @@ const MessageFile = memo((props: Props) => {
 
   const onPreview = (e: MouseEvent) => {
     const { width, height, left, top } = (e.target as HTMLElement).getBoundingClientRect()
-    console.log((e.target as HTMLElement).getBoundingClientRect());
-    
     usePriviewImage({
       url: URL.createObjectURL(props.fileInfo.file),
       name: props.fileInfo.name,

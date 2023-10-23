@@ -1,7 +1,7 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useState, useMemo } from 'react';
 import { Input } from 'antd';
 import style from './Join.module.less';
-import UserIcon from '@/components/user-icon';
+import UserIcon from '/@/components/UserIcon';
 
 type JoinProps = {
   stream: MediaStream;
@@ -11,21 +11,25 @@ type JoinProps = {
   }) => void
 }
 
-const Join: React.FC<JoinProps> = memo(({stream, join}) => {
+const Join: React.FC<JoinProps> = memo((props) => {
   const [roomname, setRoomname] = useState('');
   const [username, setUsername] = useState('');
   
   const setVideo = useCallback((v: HTMLVideoElement) => {
     if (!v) return
-    v.srcObject = stream;
+    v.srcObject = props.stream;
     v.onloadedmetadata = () => {
       v.play();
     };
-  }, [stream])
+  }, [props.stream])
+
+  const hasVideo = useMemo(() => {
+    return !!(props.stream && props.stream.getVideoTracks().length)
+  }, [props.stream])
 
   const submit = (e: Event) => {
     e.preventDefault()
-    join({
+    props.join({
       roomname,
       username
     })
@@ -39,7 +43,7 @@ const Join: React.FC<JoinProps> = memo(({stream, join}) => {
   return (
     <div className={style.chatJoin}>
       <div className="video-box">
-        {!!stream
+        {!!hasVideo
           ? <video ref={setVideo} muted></video>
           : <UserIcon />
         }
