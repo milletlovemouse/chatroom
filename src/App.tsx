@@ -4,6 +4,8 @@ import Layout from './components/Layout'
 import { App as AntdApp } from 'antd';
 import { createContext } from 'react';
 import { message } from 'antd';
+import store from '@/store'
+import { Provider } from 'react-redux'
 
 type ThemeData = {
   borderRadius: number;
@@ -31,28 +33,29 @@ const defaultData: ThemeData = {
 const App: React.FC = () => {  
   const [data] = React.useState<ThemeData>(defaultData);
   return (
-    <AppContext.Provider value={{}}>
-      <ConfigProvider
-        theme={{
-          token: {
-            colorPrimary: data.colorPrimary,
-            borderRadius: data.borderRadius,
-            // colorBgContainer: data.colorBgContainer,
-          },
-          components: {
-            Button: {
-              colorPrimary: data.Button?.colorPrimary,
-              algorithm: data.Button?.algorithm,
+    <Provider store={store}>
+      <AppContext.Provider value={{}}>
+        <ConfigProvider
+          theme={{
+            token: {
+              colorPrimary: data.colorPrimary,
+              borderRadius: data.borderRadius,
+              // colorBgContainer: data.colorBgContainer,
             },
-          },
-        }}
-      >
-        <AntdApp>
-          <Layout />
-        </AntdApp>
-      </ConfigProvider>
-    </AppContext.Provider>
-    
+            components: {
+              Button: {
+                colorPrimary: data.Button?.colorPrimary,
+                algorithm: data.Button?.algorithm,
+              },
+            },
+          }}
+        >
+          <AntdApp>
+            <Layout />
+          </AntdApp>
+        </ConfigProvider>
+      </AppContext.Provider>
+    </Provider>
   )
 }
 

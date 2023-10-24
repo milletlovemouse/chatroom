@@ -11,6 +11,8 @@ import { ImageOutline } from '@ricons/ionicons5';
 import { DriveFileMoveRound } from '@ricons/material';
 import usefileSelect, { AcceptType, UploadConfig } from '/@/hooks/useFileSelect';
 import FileList, { Img } from '@/components/FileList';
+import { useDispatch } from 'react-redux'
+import { addCount } from '@/store/reducers/chat';
 import { Button } from 'antd';
 
 type Props = {
@@ -32,13 +34,17 @@ export type MessageItem = {
 }
 type FileInfo = Awaited<ReturnType<typeof getFileInfo>>
 
-const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {  
+const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
+  const dispatch = useDispatch()
   const rtc = useContext<RTCClient>(Context)
   rtc.off('message')
   rtc.on('message', async (message: MessageItem) =>{
     message.isSelf = false
     messageList.push(message)
     setMessageList([...messageList])
+    if (!props.open) {
+      dispatch(addCount())
+    }
   })
 
   const inputRef = useRef<HTMLInputElement>(null)

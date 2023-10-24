@@ -1,5 +1,5 @@
 import { AudioFilled, AudioMutedOutlined, AudioOutlined } from "@ant-design/icons";
-import { Button, Select, Space } from "antd";
+import { Button, Select, Space, Badge } from "antd";
 import { Icon } from '@ricons/utils'
 import { Video48Regular, VideoOff48Regular, Video48Filled } from '@ricons/fluent';
 import { DeviceDesktop, DeviceDesktopOff } from '@ricons/tabler'
@@ -10,6 +10,9 @@ import { DeviceInfo } from "/@/utils/MediaDevices/mediaDevices";
 import RTCClient from '@/utils/WebRTC/rtc-client';
 import { onError } from "/@/utils/WebRTC/message";
 import { Context } from "/@/pages/chatroom";
+import { useSelector, useDispatch } from 'react-redux'
+import { clearCount } from '@/store/reducers/chat';
+import { State } from "/@/store";
 
 export interface Emits {
   updateDeviceInfo?: (deviceInfo: Props['deviceInfo']) => void;
@@ -39,6 +42,8 @@ export type RefType = {
 }
 
 const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
+  const count = useSelector((state: State) => state.chat.count)
+  const dispatch = useDispatch()
   const rtc = useContext<RTCClient>(Context)
   const fieldNames = { value: 'deviceId' }
   const iconStyle = {
@@ -95,6 +100,9 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
   }
 
   const chatBoxToggle = () => {
+    if (!props.open) {
+      dispatch(clearCount())
+    }
     props.onChatBoxToggle?.(!props.open)
   }
 
@@ -226,13 +234,16 @@ const DeviceSelect = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
           </Button>
           &nbsp;
           &nbsp;
-          <Button
-            shape="circle"
-            type="primary"
-            icon={<span className="anticon" style={iconStyle}><Icon><ChatboxEllipsesOutline /></Icon></span>}
-            onClick={chatBoxToggle}
-            >
-          </Button>
+          <Badge count={count}>
+            <Button
+              shape="circle"
+              type="primary"
+              icon={<span className="anticon" style={iconStyle}><Icon><ChatboxEllipsesOutline /></Icon></span>}
+              onClick={chatBoxToggle}
+              >
+            </Button>
+          </Badge>
+          
           &nbsp;
           &nbsp;
           <Button 
