@@ -57,7 +57,17 @@ const prodConfig = merge(config, {
         // 默认开启
         // parallel true:  // 多进程并发执行，提升构建速度 。 运行时默认的并发数：os.cpus().length - 1
       }),
-      new TerserPlugin()
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            drop_console: true,
+            pure_funcs: ['console.debug'] // 保留 console.debug
+          },
+          mangle: {
+            safari10: true // 解决ie，safari10.1不支持ES6语句
+          },
+        }
+      })
     ],
   },
 })
