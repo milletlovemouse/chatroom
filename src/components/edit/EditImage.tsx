@@ -1,7 +1,7 @@
 import { SaveOutlined, ScissorOutlined, CloseOutlined, RiseOutlined, ExpandOutlined, BorderOutlined } from "@ant-design/icons";
 import { Edit32Regular } from "@ricons/fluent";
 import { PenFountain } from "@ricons/carbon";
-import draw, { getPrimitiveImage } from "./util";
+import draw, { getOriginalImageRect } from "./util";
 import style from "./EditImage.module.less"
 import { base64ToFile } from "/@/utils/fileUtils";
 import useResizeObserver from "/@/hooks/useResizeObserver";
@@ -238,14 +238,14 @@ export const EditImage = memo((props: Props) => {
     bottomEl.current.style.height = parentHeight - height - top + 'px'
   }
 
-  const cutInfoCache = useRef<typeof cutInfo>(null)
+  const cutInfoRef = useRef<typeof cutInfo>(null)
   useEffect(() => {
-    cutInfoCache.current = cutInfo
+    cutInfoRef.current = cutInfo
     const parent = region.current?.parentElement
     const parentRect = parent?.getBoundingClientRect()
     const rect = region.current?.getBoundingClientRect()
     updateMaskStyle(rect, parentRect)
-  }, [cutInfo, cutInfo])
+  }, [cutInfo])
 
   const downInfo = useRef<{
     x: number
@@ -263,8 +263,8 @@ export const EditImage = memo((props: Props) => {
     const { width: parentWidth, height: parentHeight } = parentRect
     const { width, height } = rect
 
-    let left = Number(cutInfoCache.current.left.replace('px', ''))
-    let top = Number(cutInfoCache.current.top.replace('px', ''))
+    let left = Number(cutInfoRef.current.left.replace('px', ''))
+    let top = Number(cutInfoRef.current.top.replace('px', ''))
     left = Math.min(Math.max(left +  (x - downX), 0), parentWidth - width)
     top = Math.min(Math.max(top +  (y - downY), 0), parentHeight - height)
     
@@ -303,7 +303,7 @@ export const EditImage = memo((props: Props) => {
       const { borderBoxSize } = entry
       const { inlineSize: newWidth, blockSize: newHeight } = borderBoxSize[0]
       const { width: oldWidth, height: oldHeight } = imageSize.current
-      const cutInfotemp = { ...cutInfo }
+      const cutInfotemp = { ...cutInfoRef.current }
       imageSize.current = {
         width: newWidth,
         height: newHeight
@@ -320,11 +320,11 @@ export const EditImage = memo((props: Props) => {
         const height = Number(cutInfotemp.height.replace('px', '')) * newHeight / oldHeight
         cutInfotemp.height = height + 'px'
       }
-      if (JSON.stringify(cutInfotemp) !== JSON.stringify(cutInfo)) {
+      if (JSON.stringify(cutInfotemp) !== JSON.stringify(cutInfoRef.current)) {
         setCutInfo(cutInfotemp)
       }
     })
-  }, [image.current, cutInfo])
+  }, [image.current])
 
   let disconnect = useRef<() => void>()
   useEffect(() => {
@@ -536,6 +536,13 @@ export const EditImage = memo((props: Props) => {
   useEffect(() => {
     setImg(props.img)
   }, [props.img.file, props.img.url])
+
+  const originalImageRect = useRef<DOMRect>(null)
+  useEffect(() => {
+    (async () => {
+      originalImageRect.current = await getOriginalImageRect(img.file)
+    })()
+  }, [img])
   
   const save = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -545,8 +552,7 @@ export const EditImage = memo((props: Props) => {
     }
     let canvas = document.createElement('canvas')
     const { width: imgWidth, height: imgHeight } = image.current.getBoundingClientRect()
-    const { image: primitiveImage, close } = await getPrimitiveImage(img.file)
-    const { width: primitiveW, height: primitiveH } = primitiveImage
+    const { width: primitiveW, height: primitiveH } = originalImageRect.current
     const scaleInfo = {
       wScale: primitiveW / imgWidth,
       hScale: primitiveH / imgHeight
@@ -556,10 +562,10 @@ export const EditImage = memo((props: Props) => {
     const canvasHeight = imgHeight * scaleInfo.hScale
     canvas.width = canvasWidth
     canvas.height = canvasHeight
-    ctx.drawImage(primitiveImage, 0, 0, canvasWidth, canvasHeight, 0, 0, canvasWidth, canvasHeight)
+    ctx.drawImage(image.current, 0, 0, canvasWidth, canvasHeight, 0, 0, canvasWidth, canvasHeight)
 
     if (canvasInfo.graphList)
-      canvasInfo.graphList.forEach((list: LineInfo) => setCanvas(canvas, list, scaleInfo))
+      canvasInfo.graphList.forEach((list: LineInfo) => setCanvas(canvas, list, {...scaleInfo, isSave: true}))
 
     // 裁剪
     if (region.current) {
@@ -583,12 +589,11 @@ export const EditImage = memo((props: Props) => {
     }
     props.save(newImg, img)
     setImg(newImg)
-    lineInfoMap = {}
+    lineInfoMap.current = {}
     setCutState(cutState = false)
     setGraphState(graphState = null)
     resetCanvasInfo()
     reset()
-    close()
     onSuccess('保存成功！')
   }
   const reset = () => {
@@ -672,6 +677,11 @@ export const EditImage = memo((props: Props) => {
       setTransition({})
       image.current.ontransitionend = () => {
         setShowToolBar(true)
+        const { width, height } = image.current.getBoundingClientRect()
+        imageSize.current = {
+          width,
+          height
+        }
       }
     }
     return () => {
@@ -685,7 +695,7 @@ export const EditImage = memo((props: Props) => {
   }, [])
 
   // 已经渲染的数据
-  let lineInfoMap: Record<string, LineInfo> = {}
+  let lineInfoMap = useRef<Record<string, LineInfo>>({})
   /**
    * @param canvas 
    * @param lineInfo 
@@ -694,17 +704,18 @@ export const EditImage = memo((props: Props) => {
    */
   function setCanvas(canvas: HTMLCanvasElement, lineInfo: LineInfo & {key?: string}, scaleInfo?: {
     wScale: number,
-    hScale: number
+    hScale: number,
+    isSave?: boolean
   }) {
     if (!canvas) return
     const key = lineInfo.key
     if (key) {
       // 已经渲染的数据不再渲染
-      if (lineInfoMap[key] && JSON.stringify(lineInfoMap[key]) === JSON.stringify(lineInfo)) {
+      if (lineInfoMap.current[key] && JSON.stringify(lineInfoMap.current[key]) === JSON.stringify(lineInfo)) {
         return
       } else {
         // 数据更新重新保存
-        lineInfoMap[key] = deepcopy(lineInfo)
+        lineInfoMap.current[key] = deepcopy(lineInfo)
       }
     }
     
@@ -718,6 +729,14 @@ export const EditImage = memo((props: Props) => {
     if (lineInfo.type === 'rect') {
       draw.drawRect(canvas, option)
     } else if (lineInfo.type === 'mosaic') {
+      if (!scaleInfo) {
+        const { width: imgWidth, height: imgHeight } = image.current.getBoundingClientRect()
+        const { width: primitiveW, height: primitiveH } = originalImageRect.current
+        option.scaleInfo = {
+          wScale: primitiveW / imgWidth,
+          hScale: primitiveH / imgHeight
+        }
+      }
       draw.drawMosaic(canvas, {
         ...option,
         img: image.current
