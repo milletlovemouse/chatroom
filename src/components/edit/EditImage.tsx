@@ -1,6 +1,7 @@
 import { SaveOutlined, ScissorOutlined, CloseOutlined, RiseOutlined, ExpandOutlined, BorderOutlined } from "@ant-design/icons";
 import { Edit32Regular } from "@ricons/fluent";
 import { PenFountain } from "@ricons/carbon";
+import { IosRedo, IosUndo } from "@ricons/ionicons4"
 import draw, { getOriginalImageRect } from "./util";
 import style from "./EditImage.module.less"
 import { base64ToFile } from "/@/utils/fileUtils";
@@ -54,6 +55,7 @@ export const EditImage = memo((props: Props) => {
   const bottomEl = useRef<HTMLDivElement>(null)
   const leftEl = useRef<HTMLDivElement>(null)
   const rightEl = useRef<HTMLDivElement>(null)
+  const inputColor = useRef<HTMLInputElement>(null)
   const cursors = ['auto', 'nwse-resize', 'nesw-resize', 'ew-resize', 'ns-resize']
   const cutStyle = {
     left: '0px',
@@ -351,19 +353,31 @@ export const EditImage = memo((props: Props) => {
     pointList: Array<[number, number]>
   }
   const [canvasInfo, setCanvasInfo] = useState<{
+    // css属性，元素不会成为事件的target
     pointerEvents: 'none' | 'auto';
     // 画笔线段数据
     graphList?: Array<LineInfo>
   }>({
     pointerEvents: 'auto',
   })
+  const redoGraphList = useRef<Array<LineInfo>>([])
   const canvasInfoRef = useRef(canvasInfo)
   useEffect(() => {
     canvasInfoRef.current = canvasInfo
   }, [canvasInfo])
 
-  const lineColor = useRef<string>('#FF0000')
-  const lineWidth = useRef<number>(2)
+  const [lineColor, setLineColor] = useState<string>('#FF0000')
+  const lineColorMemo = useMemo(() => graphState === 'markerpen' ? colorToHalfTransparent(lineColor, 0.4) : lineColor, [graphState, lineColor])
+  const [lineWidth, setLineWidth] = useState<number>(2)
+  const lineColorRef = useRef(lineColorMemo)
+  const lineWidthRef = useRef(lineWidth)
+  useEffect(() => {
+    lineColorRef.current = lineColorMemo
+  }, [lineColorMemo])
+  useEffect(() => {
+    lineWidthRef.current = lineWidth
+  }, [lineWidth])
+
   const resetCanvasInfo = () => {
     delete canvasInfo.graphList
     setCanvasInfo({...canvasInfo})
@@ -392,8 +406,8 @@ export const EditImage = memo((props: Props) => {
     const { offsetX, offsetY } = e
     list.push({
       type: graphStateRef.current,
-      lineColor: lineColor.current,
-      lineWidth: lineWidth.current,
+      lineColor: lineColorRef.current,
+      lineWidth: lineWidthRef.current,
       pointList: [[offsetX, offsetY]]
     })
     canvasInfoRef.current.graphList = list
@@ -412,8 +426,8 @@ export const EditImage = memo((props: Props) => {
     if (polylineStateRef.current.begin) {
       list.push({
         type: graphStateRef.current,
-        lineColor: lineColor.current,
-        lineWidth: lineWidth.current,
+        lineColor: lineColorRef.current,
+        lineWidth: lineWidthRef.current,
         pointList: [[offsetX, offsetY], [offsetX, offsetY]]
       })
     } else {
@@ -508,16 +522,17 @@ export const EditImage = memo((props: Props) => {
     if (e.target !== image.current) return
     const list = canvasInfoRef.current.graphList || []
     mouseHandleMap[e.type][graphStateRef.current](e, list)
+    if (e.type === 'mousedown') {
+      redoGraphList.current = []
+    }
   }, [])
 
   const graphStateToggle = (e: Event, options: {
-    lineColor: string,
     lineWidth: number,
     state: GraphState
   }) => {
     e.stopPropagation()
-    lineWidth.current = options.lineWidth
-    lineColor.current = options.lineColor
+    setLineWidth(options.lineWidth)
     setGraphState(graphState = graphState === options.state ? null : options.state)
     setCutState(cutState = false)
     reset()
@@ -634,6 +649,32 @@ export const EditImage = memo((props: Props) => {
     }
   }
 
+  const undo = () => {
+    if (!canvasInfo.graphList?.length){
+      return
+    }
+    const lineInfo = canvasInfo.graphList.pop()
+    redoGraphList.current.push(lineInfo)
+    const key = `canvas-${lineInfo.type}-${canvasInfo.graphList.length}`
+    delete lineInfoMap.current[key]
+    setCanvasInfo({...canvasInfo})
+  }
+
+  const redo = () => {
+    if (!redoGraphList.current.length) {
+      return
+    }
+    const lineInfo = redoGraphList.current.pop()
+    canvasInfo.graphList.push(lineInfo)
+    setCanvasInfo({...canvasInfo})    
+  }
+
+  const lineWidthResize = useCallback((e: WheelEvent) => {
+    if (!graphStateRef.current) return
+    const value = e.deltaY > 0 ? 1 : -1
+    setLineWidth((lineWidth) => Math.max(1, Math.min(16, lineWidth + value)))
+  }, [])
+
   const [showToolBar, setShowToolBar] = useState(!props.from)
   const from = useMemo(() => {
     if (props.from) {
@@ -672,7 +713,7 @@ export const EditImage = memo((props: Props) => {
     }
   }
 
-  useEffect(() => {
+  useEffect(function onMounted() {
     if (props.from) {
       setTransition({})
       image.current.ontransitionend = () => {
@@ -684,13 +725,15 @@ export const EditImage = memo((props: Props) => {
         }
       }
     }
-    return () => {
+    document.addEventListener('wheel', lineWidthResize)
+    return function onUnmounted() {
       document.removeEventListener('mousedown', updateDown)
       document.removeEventListener('mouseup', updateDown)
       document.removeEventListener('mousemove', updateCursor)
       document.removeEventListener('mousemove', updateCutInfo)
       document.removeEventListener('mousemove', updateRegion)
       document.removeEventListener('mouseup', drawMouse)
+      document.removeEventListener('wheel', lineWidthResize)
     }
   }, [])
 
@@ -793,12 +836,28 @@ export const EditImage = memo((props: Props) => {
           : null }
         { showToolBar ?
           <div className="toolbar" onMouseDown={(e) => e.stopPropagation()}>
+            <span
+              title={`${lineWidth}`}
+              className="anticon edit-style"
+              onClick={() => inputColor.current.click()}
+            >
+              <span className="line-width">
+                <span
+                  className="point"
+                  style={{
+                    background: lineColorMemo,
+                    width: lineWidth + 'px',
+                    height: lineWidth + 'px'
+                  }}
+                ></span>
+              </span>
+              <input type="color" ref={inputColor} value={lineColor} onChange={(e) => setLineColor(e.target.value)} />
+            </span>
             <BorderOutlined
               className={classnames({active: graphState === 'rect'})}
               title="矩形"
               onClick={(e) => graphStateToggle(e.nativeEvent, {
                 lineWidth: 2,
-                lineColor: '#FF0000',
                 state: 'rect'
               })}
             />
@@ -807,7 +866,6 @@ export const EditImage = memo((props: Props) => {
               title="折线"
               onClick={(e) => graphStateToggle(e.nativeEvent, {
                 lineWidth: 5,
-                lineColor: '#FF0000',
                 state: 'polyline'
               })}
             />
@@ -817,7 +875,6 @@ export const EditImage = memo((props: Props) => {
               tabIndex={-1}
               onClick={(e) => graphStateToggle(e.nativeEvent, {
                 lineWidth: 2,
-                lineColor: '#FF0000',
                 state: 'pencil'
               })}
             >
@@ -829,7 +886,6 @@ export const EditImage = memo((props: Props) => {
               tabIndex={-1}
               onClick={(e) => graphStateToggle(e.nativeEvent, {
                 lineWidth: 15,
-                lineColor: colorToHalfTransparent('#FF0000', 0.4),
                 state: 'markerpen'
               })}
             >
@@ -841,7 +897,6 @@ export const EditImage = memo((props: Props) => {
               tabIndex={-1}
               onClick={(e) => graphStateToggle(e.nativeEvent, {
                 lineWidth: 0,
-                lineColor: '#7a7a7a',
                 state: 'mosaic'
               })}
             >
@@ -849,6 +904,22 @@ export const EditImage = memo((props: Props) => {
             </span>
             <ExpandOutlined className={classnames({active: cutState})} title="裁剪" onClick={cut} />
             {/* <ScissorOutlined className={classnames({active: cutState})} title="裁剪" onClick={cut} /> */}
+            <span
+              className="anticon xicon"
+              title="撤销"
+              tabIndex={-1}
+              onClick={undo}
+            >
+              <IosUndo />
+            </span>
+            <span
+              className="anticon xicon"
+              title="重做"
+              tabIndex={-1}
+              onClick={redo}
+            >
+              <IosRedo />
+            </span>
             <CloseOutlined title="退出编辑" onClick={close} />
             <SaveOutlined title="保存" onClick={save} />
           </div>
