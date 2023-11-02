@@ -6,9 +6,11 @@ import DeviceSelect, { RefType } from '/@/components/chatroom/DeviceSelect';
 import MemberList from '/@/components/chatroom/MemberList';
 import style from './index.module.less';
 import Chat, { RefType as ChatRef } from '/@/components/chat/Chat';
+import VideoRecorder from '/@/components/recorder/VideoRecorder';
 
 export const Context = createContext(null);
 const ChatRoom: React.FC = () => {
+  const [memberListRef, setMemberListRef] = useState<HTMLDivElement>(null)
   const [isInRoom, setIsInRoom] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream>(null)
   const [displayStream, setDisplayStream] = useState<{
@@ -48,6 +50,13 @@ const ChatRoom: React.FC = () => {
       remoteStream: localStream,
     }, ...connectorInfoList.filter(connectorInfo => connectorInfo.streamType === 'user')]
   },[connectorInfoList, localStream])
+
+  const audioTracks = useMemo(() => memberList.map((member) => {
+    if (!member.remoteStream) {
+      return null
+    }
+    return member.remoteStream.getAudioTracks()
+  }).flat(), [memberList])  
 
   const host = location.host
   const baseurl = process.env.BASE_URL
@@ -247,8 +256,9 @@ const ChatRoom: React.FC = () => {
         <div className={'chat-room-body'  + ' ' + (open ? 'open' : '')}>
           {!isInRoom
             ? <Join stream={localStream} join={join}></Join>
-            : <MemberList memberList={memberList} mainStream={displayStream}></MemberList>
+            : <MemberList ref={(ref: {el: HTMLDivElement}) => setMemberListRef(ref?.el)} memberList={memberList} mainStream={displayStream}></MemberList>
           }
+          { isInRoom ? <VideoRecorder el={memberListRef} track={audioTracks} /> : null }
           <div className="chat-room-tool">
             <DeviceSelect
               ref={deviceSelect}

@@ -87,42 +87,37 @@ const FileList = memo((props: Props) => {
     const menuList = getMenuList(img)
     useMenu(event.nativeEvent, menuList)
   }
-  return (
-    <div>
-      {images
-        ? <div className={style.fileBox}>
-            <div className="file-list">
-              {images.map(img => {
-                return (
-                  <li
-                    key={img.url}
-                    onContextMenu={(e) => onContextmenu(e, img)}
-                  >
-                    {
-                      isImage(img.file)
-                        ? <img
-                            ref={(i) => setImage(img, i)}
-                            onClick={(e) => {edit({img} as Menu, e.nativeEvent)}}
-                            src={img.url}
-                            title={img.file.name}
-                            alt={img.file.name}
-                            style={{cursor: "zoom-in"}}
-                          />
-                        : <img
-                            src={img.url}
-                            title={img.file.name}
-                            alt={img.file.name}
-                          />
-                    }
-                  </li>
-                )
-              })}
-            </div>
-          </div>
-        : ''
-      }
-    </div>
-  )
+  return images.length
+    ? <div className={style.fileBox}>
+        <div className="file-list">
+          {images.map(img => {
+            return (
+              <li
+                key={img.url}
+                onContextMenu={(e) => onContextmenu(e, img)}
+              >
+                {
+                  isImage(img.file)
+                    ? <img
+                        ref={(i) => setImage(img, i)}
+                        onClick={(e) => {edit({img} as Menu, e.nativeEvent)}}
+                        src={img.url}
+                        title={img.file.name}
+                        alt={img.file.name}
+                        style={{cursor: "zoom-in"}}
+                      />
+                    : <img
+                        src={img.url}
+                        title={img.file.name}
+                        alt={img.file.name}
+                      />
+                }
+              </li>
+            )
+          })}
+        </div>
+      </div>
+    : null
 })
 
 export default FileList

@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useEffect, useRef } from "react";
+import React, { memo, useMemo, useEffect, useRef, Ref, useImperativeHandle, forwardRef } from "react";
 import UserIcon from "../UserIcon";
 import { ConnectorInfoList, StreamType } from "/@/utils/WebRTC/rtc-client";
 import { audioVisible } from "@/utils/audio/audioVisualizer";
@@ -12,8 +12,19 @@ type Props = {
     remoteStream: MediaStream,
   },
 }
-const MemberList = memo((props: Props) => {
+
+type RefType = {
+  el: HTMLDivElement,
+}
+
+const MemberList = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
   const { mainStream } = props
+  const root = useRef<HTMLDivElement>(null)
+  useImperativeHandle(ref, () => ({
+    get el() {
+      return root.current
+    },
+  }))
   const setVideo = (v: HTMLVideoElement, stream: MediaStream) => {
     if (!v) return
     v.srcObject = stream
@@ -79,7 +90,7 @@ const MemberList = memo((props: Props) => {
 
   const background = useMemo(() => mainStream ? '#222' : 'transparent', [mainStream])
   return (
-    <div className={style.member}>
+    <div ref={root} className={style.member}>
       <div className="member-list" style={{
         width,
         display,
@@ -125,6 +136,6 @@ const MemberList = memo((props: Props) => {
       </div>
     </div>
   )
-})
+}))
 
 export default MemberList

@@ -1,0 +1,28 @@
+.videoRecorder {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  font-size: 2em;
+  z-index: 999999999999;
+  :global {
+    .video-recorder-tool {
+      cursor: move;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 100px;
+      color: #fff;
+      .start, .end {
+        cursor: pointer;
+      }
+      .end {
+        color: red;
+      }
+      .time {
+        line-height: 1em;
+      }
+    }
+  }
+}
