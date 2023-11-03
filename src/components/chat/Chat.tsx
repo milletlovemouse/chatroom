@@ -1,4 +1,4 @@
-import React, { forwardRef, memo, Ref, useContext, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, memo, Ref, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import RTCClient from '@/utils/WebRTC/rtc-client';
 import { Context } from '@/pages/chatroom'
 import getFileTypeImage from '/@/utils/file-type-image';
@@ -16,6 +16,8 @@ import { addCount } from '@/store/reducers/chat';
 import useWebWorkerFn from '/@/hooks/useWebWorkerFn';
 import { Button } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
+import Emoji from '@/components/chat/Emoji';
+import { EmojiSmileSlight24Regular } from '@ricons/fluent';
 
 type Props = {
   open: boolean;
@@ -49,7 +51,6 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
     }
   })
 
-  const inputRef = useRef<HTMLInputElement>(null)
   const [inputValue, setInputValue] = useState('')
   const [messageList, setMessageList] = useState<MessageItem[]>([])
 
@@ -111,7 +112,6 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
     messageList.push(messageItem)
     setInputValue('')
     setMessageList([...messageList])
-    inputRef.current.value = ''
     console.log('messageList', messageList);
   }
 
@@ -155,6 +155,18 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
     })])
   }
 
+  const [open, setOpen] = useState(false)
+  const close = () => setOpen(false)
+  function openEmoji(e: Event) {
+    e.stopPropagation()
+    setOpen(!open)
+  }
+
+  function selectEmoji(emoji: string) {
+    setInputValue((value) => value + emoji)
+    close()
+  }
+
   function clearMessage() {
     setMessageList([])
     setFileMessageList([])
@@ -163,23 +175,32 @@ const Chat = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
   useImperativeHandle(ref, () => ({
     clearMessage
   }))
+
+  useEffect(function onMounted() {
+    document.addEventListener('click', close)
+    return function onUnmounted() {
+      document.removeEventListener('click', close)
+    }
+  }, [])
   return (
     <div className={style.rtcChat + ' ' + (props.open ? style.open : '')}>
       <MessageList messageList={messageList} />
       <div className="send-tool">
+        <span className="tool" style={{fontSize: '1.75em'}}><Icon><EmojiSmileSlight24Regular onClick={(e) => openEmoji(e.nativeEvent)} /></Icon></span>
         <span className="tool" style={{fontSize: '1.75em'}}><Icon><ImageOutline onClick={() => fileSelect(selectImageConfig)} /></Icon></span>
         <span className="tool" style={{fontSize: '1.75em'}}><Icon><DriveFileMoveRound onClick={() => fileSelect(selectFileConfig)} /></Icon></span>
       </div>
       <FileList fileList={fileMessageList} remove={remove} updateImage={updateImage}/>
       <div className="send">
+        { open ? <Emoji select={selectEmoji} /> : null }
         <input
-          ref={inputRef}
           className="chat-input"
           onInput={(e) => setInputValue((e.nativeEvent.target as HTMLInputElement).value)}
           onKeyUp={sendMessage}
           placeholder="请输入消息内容"
           maxLength={maxlength}
           disabled={loading}
+          value={inputValue}
         />
         <Button type="primary" size="large" loading={loading} onClick={sendMessage}>发送</Button>
       </div>

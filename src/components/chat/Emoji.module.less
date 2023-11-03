@@ -1,0 +1,36 @@
+.emojis {
+  position: absolute;
+  bottom: 100%;
+  width: 100%;
+  height: 300px;
+  padding: 0 10px;
+  border-radius: 5px;
+  background: #111111;
+  overflow-y: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { 
+    width: 0px !important;
+  }
+  :global {
+    ul {
+      display: flex;
+      flex-wrap: wrap;
+      li {
+        padding: 0 5px;
+        &.title {
+          width: 100%;
+          padding: 10px;
+          color: #fff;
+          font-size: 16px;
+          font-weight: 600;
+          letter-spacing: .2rem;
+        }
+        &.emoji {
+          cursor: pointer;
+          font-size: 20px;
+          padding: 10px;
+        }
+      }
+    }
+  }
+}
