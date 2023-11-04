@@ -258,7 +258,7 @@ const ChatRoom: React.FC = () => {
             ? <Join stream={localStream} join={join}></Join>
             : <MemberList ref={(ref: {el: HTMLDivElement}) => setMemberListRef(ref?.el)} memberList={memberList} mainStream={displayStream}></MemberList>
           }
-          { isInRoom ? <VideoRecorder el={memberListRef} track={audioTracks} /> : null }
+          { isInRoom ? <VideoRecorder el={memberListRef} audioTracks={audioTracks} /> : null }
           <div className="chat-room-tool">
             <DeviceSelect
               ref={deviceSelect}

@@ -2,7 +2,7 @@ import { SaveOutlined, ScissorOutlined, CloseOutlined, RiseOutlined, ExpandOutli
 import { Edit32Regular } from "@ricons/fluent";
 import { PenFountain } from "@ricons/carbon";
 import { IosRedo, IosUndo } from "@ricons/ionicons4"
-import draw, { getOriginalImageRect } from "./util";
+import draw, { cropPicture, getOriginalImageRect } from "./util";
 import style from "./EditImage.module.less"
 import { base64ToFile } from "/@/utils/fileUtils";
 import useResizeObserver from "/@/hooks/useResizeObserver";
@@ -584,17 +584,12 @@ export const EditImage = memo((props: Props) => {
 
     // 裁剪
     if (region.current) {
-      const cvs = document.createElement('canvas')
-      const ctx = cvs.getContext('2d')
       const { width, height } = region.current.getBoundingClientRect()
       const left = Number(cutInfo.left.replace('px', '')) * scaleInfo.wScale
       const top = Number(cutInfo.top.replace('px', '')) * scaleInfo.hScale
       const cvsWidth = width * scaleInfo.wScale
       const cvsHeight = height * scaleInfo.hScale
-      cvs.width = cvsWidth
-      cvs.height = cvsHeight
-      ctx.drawImage(canvas, left, top, cvsWidth, cvsHeight, 0, 0, cvsWidth, cvsHeight)
-      canvas = cvs
+      canvas = cropPicture(canvas, left, top, cvsWidth, cvsHeight)
     }
 
     const dataURL = canvas.toDataURL(img.file.type)

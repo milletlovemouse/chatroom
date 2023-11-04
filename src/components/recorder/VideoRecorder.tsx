@@ -7,7 +7,7 @@ import style from './VideoRecorder.module.less'
 
 type Props = {
   el?: HTMLElement,
-  track?: MediaStreamTrack[],
+  audioTracks?: MediaStreamTrack[],
 }
 
 const VideoRecorder = memo((props: Props) => {
@@ -25,7 +25,7 @@ const VideoRecorder = memo((props: Props) => {
     timeStart()
     recorder.current = useVideoRecorder(props.el, {
       background: '#2b2b2b',
-      track: props.track,
+      audioTracks: props.audioTracks,
     })
   }
 
