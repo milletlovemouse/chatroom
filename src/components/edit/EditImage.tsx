@@ -69,7 +69,7 @@ export const EditImage = memo((props: Props) => {
   let [cutInfo, setCutInfo] = useState({...cutStyle})
   const ltOverlap = (x: number, y: number) => x < y
   const rbOverlap = (x: number, y: number) => x > y
-  const updateCursor = (e: MouseEvent) => {
+  const updateCursor = useCallback((e: MouseEvent) => {
     e.stopPropagation()
     if (down.current || !region.current) return
     const rect = region.current.getBoundingClientRect()
@@ -88,9 +88,9 @@ export const EditImage = memo((props: Props) => {
       root.current.parentElement.style.cursor = cursors[4]
       position.current = ltOverlap(y, top) ? Position.Top : Position.Bottom
     }
-  }
+  }, [])
 
-  function updateCutInfo(e: MouseEvent) {
+  const updateCutInfo = useCallback((e: MouseEvent) => {
     if (!down.current || !region.current) return
     const parent = region.current.parentElement
     const parentRect = parent.getBoundingClientRect()
@@ -218,7 +218,7 @@ export const EditImage = memo((props: Props) => {
         height: height + 'px'
       }))
     }
-  }
+  }, [])
 
   function updateMaskStyle(rect: DOMRect, parentRect: DOMRect) {
     if (!rect || !parentRect) return
@@ -277,7 +277,7 @@ export const EditImage = memo((props: Props) => {
     }))
   }, [])
 
-  function updateDown(e: MouseEvent) {
+  const updateDown = useCallback((e: MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     down.current = e.type === 'mousedown'
@@ -286,7 +286,7 @@ export const EditImage = memo((props: Props) => {
     } else {
       document.removeEventListener('mousemove', updateCutInfo)
     }
-  }
+  }, [])
 
   const resizeObserver = useRef<() => () => void>(null)
   const imageSize = useRef<{ width?: number, height?: number }>(null)
