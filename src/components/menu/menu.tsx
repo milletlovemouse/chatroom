@@ -60,13 +60,19 @@ export function createMenu(menuList: MenuList, style: Partial<CSSStyleDeclaratio
 
   const { width: bodyW, height: bodyH } = document.body.getBoundingClientRect()
   document.body.appendChild(root)
-  const { left, top, width, height } = root.getBoundingClientRect()
-  if (left + width > bodyW) {
-    root.style.left = `${bodyW - width}px`
-  }
-  if (top + height > bodyH) {
-    root.style.top = `${bodyH - height}px`
-  }
+  
+  setTimeout(function position() {
+    const { left, top, width, height } = root.getBoundingClientRect()
+    if (!width && !height) {
+      return setTimeout(position)
+    }
+    if (left + width > bodyW) {
+      root.style.left = `${bodyW - width}px`
+    }
+    if (top + height > bodyH) {
+      root.style.top = `${bodyH - height}px`
+    }
+  })
   return close
 }
 

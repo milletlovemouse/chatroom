@@ -46,12 +46,7 @@ const MessageFile = memo((props: Props) => {
     saveFile(data.file)
   }
 
-  const setVideo = (video: HTMLVideoElement) => {
-    if (!video) return;
-    video.src = URL.createObjectURL(props.fileInfo.file)
-  }
-
-  const setImage = (image: HTMLImageElement) => {
+  const setMediaSrc = (image: HTMLImageElement | HTMLVideoElement) => {
     if (!image) return;
     image.src = URL.createObjectURL(props.fileInfo.file)
   }
@@ -80,7 +75,7 @@ const MessageFile = memo((props: Props) => {
       {isVideo
         ? <div className="video-box">
             <video
-              ref={setVideo}
+              ref={setMediaSrc}
               onContextMenu={(e) => onContextmenu(e, otherMenuList, props.fileInfo.file)}
               controls
               title={props.fileInfo.name}
@@ -89,7 +84,7 @@ const MessageFile = memo((props: Props) => {
         : <div className="img-box">
             {isImage
               ? <img
-                  ref={setImage}
+                  ref={setMediaSrc}
                   onClick={(e) => onPreview(e.nativeEvent)}
                   onContextMenu={(e) => onContextmenu(e, imageMenuList, props.fileInfo.file)}
                   title={props.fileInfo.name}

@@ -25,16 +25,13 @@ const MemberList = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
       return root.current
     },
   }))
-  const setVideo = (v: HTMLVideoElement, stream: MediaStream) => {
-    if (!v) return
-    v.srcObject = stream
-    v.onloadedmetadata = () => {
-      v.play();
+
+  const setMediaSrc = (m: HTMLAudioElement | HTMLVideoElement, stream: MediaStream) => {
+    if (!m) return
+    m.srcObject = stream
+    m.onloadedmetadata = () => {
+      m.play();
     }; 
-  }
-  const setAudio = (a: HTMLAudioElement, stream: MediaStream) => {
-    if (!a) return
-    a.srcObject = stream
   }
   const memberList = useMemo(() => {
     return props.memberList.map((item) => {
@@ -107,7 +104,7 @@ const MemberList = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
             if (connectorInfo.videoActive) {
               return (
                 <div className="video-box" key={connectorInfo.connectorId}>
-                  <video ref={(v: HTMLVideoElement) => setVideo(v, connectorInfo.remoteStream)} muted={connectorInfo.connectorId ==='local'}></video>
+                  <video ref={(v: HTMLVideoElement) => setMediaSrc(v, connectorInfo.remoteStream)} muted={connectorInfo.connectorId ==='local'}></video>
                   {canvas}
                 </div>
               )
@@ -116,7 +113,7 @@ const MemberList = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
                 <div className="video-box" key={connectorInfo.connectorId}>
                   <UserIcon style={{border: `2px solid #444`}} />
                   {connectorInfo.connectorId !=='local' && connectorInfo.audioActive
-                    ? <audio ref={(a: HTMLAudioElement) => setAudio(a, connectorInfo.remoteStream)}></audio>
+                    ? <audio ref={(a: HTMLAudioElement) => setMediaSrc(a, connectorInfo.remoteStream)}></audio>
                     : ''
                   }
                   {canvas}
@@ -129,7 +126,7 @@ const MemberList = memo(forwardRef((props: Props, ref: Ref<RefType>) => {
       <div className="question-master">
         {mainStream
           ? <div className="video-box main-video-box">
-              <video ref={(v: HTMLVideoElement) => setVideo(v, mainStream.remoteStream)}></video>
+              <video ref={(v: HTMLVideoElement) => setMediaSrc(v, mainStream.remoteStream)}></video>
             </div>
           : ''
         }
