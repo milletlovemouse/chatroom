@@ -8,8 +8,8 @@
     "build": "rimraf dist && cross-env NODE_ENV=production webpack -c scripts/webpack.prod.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "houwx",
+  "license": "MIT",
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
     "@reduxjs/toolkit": "^1.9.7",
