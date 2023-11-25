@@ -930,13 +930,6 @@ export function useEditImage(img: Img, options: {
 }){
   const { save, from } = options || {}
   const root = document.createElement('div')
-  const style = {
-    position: 'absolute',
-    top: 0,
-    width: '100%',
-    height: '100%',
-  }
-  Object.keys(style).forEach(key => root.style[key] = style[key])
   const app = ReactDOM.createRoot(root)
   const close = () => {
     app.unmount()
